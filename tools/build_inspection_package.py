@@ -41,6 +41,35 @@ def findings_from_trace(trace: dict) -> list[dict]:
     return findings
 
 
+def build_links(project_map: dict, journeys: list[dict], trace: dict) -> dict:
+    links = []
+    for node in project_map["nodes"]:
+        node_id = node["id"]
+        journey_steps = []
+        trace_events = []
+        for journey in journeys:
+            for index, step in enumerate(journey["steps"], 1):
+                target = step.get("to") or step.get("target") or journey["initial"]["node"]
+                if target == node_id:
+                    journey_steps.append({"journeyId": journey["id"], "step": index})
+            result = next((r for r in trace["journeys"] if r["journeyId"] == journey["id"]), None)
+            if result:
+                for index, event in enumerate(result["events"], 1):
+                    if node_id in event.get("detail", ""):
+                        trace_events.append({"journeyId": journey["id"], "event": index})
+        links.append({"mapNodeId": node_id, "journeySteps": journey_steps, "traceEvents": trace_events})
+    return {"schemaVersion": project_map["schemaVersion"], "mapId": project_map["id"], "links": links}
+
+
+def source_reference(project_map: dict, map_path: Path, journeys_path: Path) -> str:
+    source = project_map.get("source", {})
+    lines = ["# Source Reference", "", f"- Map: `{map_path}`", f"- Journeys: `{journeys_path}`"]
+    if source:
+        lines += [f"- Repository: `{source.get('repository', 'not specified')}`", f"- Branch: `{source.get('branch', 'not specified')}`", f"- Capture purpose: `{source.get('purpose', 'not specified')}`"]
+    lines += ["", "This package is a generated inspection snapshot. It is not a live connection to the target project.", ""]
+    return "\n".join(lines)
+
+
 def build_package(map_path: Path, journeys_path: Path, output: Path) -> tuple[dict, list[dict]]:
     project_map = load(map_path)
     journeys = load(journeys_path)
@@ -61,6 +90,8 @@ def build_package(map_path: Path, journeys_path: Path, output: Path) -> tuple[di
     write_json(output / "journeys.json", journeys)
     write_json(output / "trace.json", trace)
     write_json(output / "findings.json", findings)
+    write_json(output / "links.json", build_links(project_map, journeys, trace))
+    (output / "source-reference.md").write_text(source_reference(project_map, map_path, journeys_path), encoding="utf-8")
     (output / "flowchart.mmd").write_text(MERMAID.rstrip() + "\n", encoding="utf-8")
     (output / "pseudocode.txt").write_text(PSEUDOCODE.rstrip() + "\n", encoding="utf-8")
     return trace, findings

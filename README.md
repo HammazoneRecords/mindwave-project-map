@@ -115,7 +115,7 @@ python3 tools/build_inspection_package.py \\
   --output build/mindwavemine-inspection
 ```
 
-The output directory contains `map.json`, `journeys.json`, `trace.json`, `findings.json`, `flowchart.mmd`, and `pseudocode.txt`. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
+The output directory contains `map.json`, `journeys.json`, `trace.json`, `findings.json`, `links.json`, `source-reference.md`, `flowchart.mmd`, and `pseudocode.txt`. `links.json` preserves shared Map-node → Journey-step → Trace-event relationships for linked viewers. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
 
 ## Self-assessment
 
