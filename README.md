@@ -66,6 +66,20 @@ README.md
 
 MIT. See [LICENSE](./LICENSE).
 
+## First real test project
+
+The first external test surface is the public [MindWaveMine R&D Interface](https://github.com/HammazoneRecords/MindWaveMine-R-D-Interface).
+
+It is a real React + FastAPI interface with multiple views, workflows, ingestion paths, fabrication actions, handoff steps, and a persisted local data model. It gives Project Map something real to describe and traverse without putting project-specific implementation inside this core repository.
+
+The integration boundary is:
+
+```text
+MindWaveMine R&D Interface → adapter / Map → Journeys → Traces → Findings
+```
+
+The interface remains its own repository. This repository owns the generic Map/Journey model and the adapter or fixture that describes the test surface.
+
 ## Next
 
 - validate Map and Journey documents
@@ -73,4 +87,5 @@ MIT. See [LICENSE](./LICENSE).
 - emit portable Trace JSON
 - add a CLI skin
 - add graph and maze skins
-- add adapters for real project surfaces
+- add an adapter for the MindWaveMine R&D Interface
+- let users replace the built-in Map with their own project
