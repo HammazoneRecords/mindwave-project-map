@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0.0",
+  "mapId": "mindwave-project-map-self",
+  "journeys": [
+    {
+      "journeyId": "self-high-level-audit",
+      "role": "architect",
+      "start": "readme",
+      "end": "viewer",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move readme -> formalization: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "move formalization -> schemas: allowed"
+        },
+        {
+          "step": 3,
+          "outcome": "pass",
+          "detail": "move schemas -> examples: allowed"
+        },
+        {
+          "step": 4,
+          "outcome": "pass",
+          "detail": "move examples -> validator: allowed"
+        },
+        {
+          "step": 5,
+          "outcome": "pass",
+          "detail": "move validator -> runner: allowed"
+        },
+        {
+          "step": 6,
+          "outcome": "pass",
+          "detail": "move runner -> package_builder: allowed"
+        },
+        {
+          "step": 7,
+          "outcome": "pass",
+          "detail": "move package_builder -> viewer: allowed"
+        },
+        {
+          "step": 8,
+          "outcome": "pass",
+          "detail": "checkpoint: high-level-architecture-traversed"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "journeyId": "self-contract-tunnel",
+      "role": "auditor",
+      "start": "schemas",
+      "end": "runner",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move schemas -> validator: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "move validator -> runner: allowed"
+        },
+        {
+          "step": 3,
+          "outcome": "pass",
+          "detail": "act validate on validator: denied"
+        },
+        {
+          "step": 4,
+          "outcome": "pass",
+          "detail": "checkpoint: contract-boundary-inspected"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "journeyId": "self-inspection-tunnel",
+      "role": "architect",
+      "start": "package_builder",
+      "end": "self_assessment",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move package_builder -> viewer: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "move viewer -> self_assessment: allowed"
+        },
+        {
+          "step": 3,
+          "outcome": "pass",
+          "detail": "checkpoint: inspection-skin-boundary-inspected"
+        }
+      ],
+      "findings": []
+    }
+  ]
+}

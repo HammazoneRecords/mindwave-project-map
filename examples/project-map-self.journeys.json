@@ -1,0 +1,35 @@
+[
+  {
+    "schemaVersion":"1.0.0","id":"self-high-level-audit","title":"High-level Project Map self-audit","map":"mindwave-project-map-self",
+    "initial":{"role":"architect","node":"readme"},
+    "steps":[
+      {"type":"move","to":"formalization","expect":"allowed"},
+      {"type":"move","to":"schemas","expect":"allowed"},
+      {"type":"move","to":"examples","expect":"allowed"},
+      {"type":"move","to":"validator","expect":"allowed"},
+      {"type":"move","to":"runner","expect":"allowed"},
+      {"type":"move","to":"package_builder","expect":"allowed"},
+      {"type":"move","to":"viewer","expect":"allowed"},
+      {"type":"checkpoint","label":"high-level-architecture-traversed"}
+    ]
+  },
+  {
+    "schemaVersion":"1.0.0","id":"self-contract-tunnel","title":"Tunnel vision: contracts and validation","map":"mindwave-project-map-self",
+    "initial":{"role":"auditor","node":"schemas"},
+    "steps":[
+      {"type":"move","to":"validator","expect":"allowed"},
+      {"type":"move","to":"runner","expect":"allowed"},
+      {"type":"act","action":"validate","target":"validator","expect":"denied"},
+      {"type":"checkpoint","label":"contract-boundary-inspected"}
+    ]
+  },
+  {
+    "schemaVersion":"1.0.0","id":"self-inspection-tunnel","title":"Tunnel vision: package and viewer","map":"mindwave-project-map-self",
+    "initial":{"role":"architect","node":"package_builder"},
+    "steps":[
+      {"type":"move","to":"viewer","expect":"allowed"},
+      {"type":"move","to":"self_assessment","expect":"allowed"},
+      {"type":"checkpoint","label":"inspection-skin-boundary-inspected"}
+    ]
+  }
+]

@@ -117,6 +117,22 @@ python3 tools/build_inspection_package.py \\
 
 The output directory contains `map.json`, `journeys.json`, `trace.json`, `findings.json`, `flowchart.mmd`, and `pseudocode.txt`. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
 
+## Self-assessment
+
+Project Map now maps and journeys its own repository. Run the high-level and tunnel-vision assessment with:
+
+```bash
+python3 tools/validate_project_map.py \
+  --map examples/project-map-self.map.json \
+  --journeys examples/project-map-self.journeys.json
+python3 tools/build_inspection_package.py \
+  --map examples/project-map-self.map.json \
+  --journeys examples/project-map-self.journeys.json \
+  --output ./self-inspection
+```
+
+Read the observations in [`docs/SELF_ASSESSMENT.md`](./docs/SELF_ASSESSMENT.md). The assessment names what the current implementation proves and what remains a gap; it does not promote the roadmap into completed functionality.
+
 ## Next
 
 - validate Map and Journey documents

@@ -20,6 +20,8 @@
 - [x] Add the branded landing-page generation prompt.
 - [x] Add dependency-free Map and Journey validation.
 - [x] Add formal Trace and Finding schema files.
+- [x] Map Project Map against itself with high-level and tunnel-vision Journeys.
+- [x] Record self-assessment observations and implementation boundaries.
 
 ## Next build — make the model stronger
 
