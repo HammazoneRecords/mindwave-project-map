@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mindwaveja.com/project-map/schemas/finding.schema.json",
+  "title": "MindWave Project Map Finding",
+  "type": "object",
+  "required": ["kind", "severity", "status", "source"],
+  "properties": {
+    "kind":{"type":"string"},
+    "severity":{"enum":["info","low","medium","high","critical"]},
+    "status":{"enum":["open","accepted","resolved","blocked"]},
+    "message":{"type":"string"},
+    "source":{"type":"object", "required":["mapId","journeyId","step"], "properties":{"mapId":{"type":"string"},"journeyId":{"type":"string"},"step":{"type":"integer"}}, "additionalProperties":false}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mindwaveja.com/project-map/schemas/trace.schema.json",
+  "title": "MindWave Project Map Trace",
+  "type": "object",
+  "required": ["schemaVersion", "mapId", "journeys"],
+  "properties": {
+    "schemaVersion": {"type":"string"},
+    "mapId": {"type":"string"},
+    "mapVersion": {"type":"string"},
+    "runId": {"type":"string"},
+    "journeys": {"type":"array", "items":{"$ref":"#/$defs/result"}}
+  },
+  "$defs": {
+    "result": {
+      "type":"object",
+      "required":["journeyId","role","start","end","passed","events","findings"],
+      "properties": {
+        "journeyId":{"type":"string"}, "role":{"type":"string"}, "start":{"type":"string"}, "end":{"type":"string"},
+        "passed":{"type":"boolean"}, "events":{"type":"array"}, "findings":{"type":"array", "items":{"$ref":"#/$defs/finding"}}
+      }
+    },
+    "finding": {"type":"object", "required":["kind","step"], "properties":{"kind":{"type":"string"},"step":{"type":"integer"}}}
+  },
+  "additionalProperties": false
+}

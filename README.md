@@ -80,7 +80,18 @@ MindWaveMine R&D Interface → adapter / Map → Journeys → Traces → Finding
 
 The interface remains its own repository. This repository owns the generic Map/Journey model and the adapter or fixture that describes the test surface.
 
-## Run the first real Journeys
+## Validate before running
+
+The public demo now has a dependency-free validator:
+
+```bash
+python3 tools/validate_project_map.py \
+  --map examples/mindwavemine.map.json \
+  --journeys examples/mindwavemine.journeys.json
+```
+
+It checks required fields, duplicate nodes, broken edge references, unknown roles, unknown permission targets, Journey/Map identity, initial nodes, and Journey move targets before execution.
+
 
 The repository includes a Map and three executable Journeys for the MindWaveMine R&D Interface:
 

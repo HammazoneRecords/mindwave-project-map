@@ -18,6 +18,8 @@
 - [x] Add the first headless Journey runner.
 - [x] Generate and commit the first MindWaveMine Trace.
 - [x] Add the branded landing-page generation prompt.
+- [x] Add dependency-free Map and Journey validation.
+- [x] Add formal Trace and Finding schema files.
 
 ## Next build — make the model stronger
 
