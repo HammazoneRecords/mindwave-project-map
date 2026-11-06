@@ -23,6 +23,7 @@
 - [x] Map Project Map against itself with high-level and tunnel-vision Journeys.
 - [x] Record self-assessment observations and implementation boundaries.
 - [x] Add linked `links.json` and `source-reference.md` to inspection packages.
+- [x] Add a self-assessment Variable Matrix with Map-node, Journey-step, and source references.
 
 ## Next build — make the model stronger
 

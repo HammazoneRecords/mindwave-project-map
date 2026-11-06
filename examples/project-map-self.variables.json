@@ -1,0 +1,11 @@
+{
+  "schemaVersion":"1.0.0",
+  "mapId":"mindwave-project-map-self",
+  "variables":[
+    {"id":"symbol:MAP_SCHEMA","name":"Map schema","kind":"contract","signature":"spec/map.schema.json","definedIn":{"file":"spec/map.schema.json","line":1},"usedBy":[{"file":"tools/validate_project_map.py","line":1}],"mapNodes":["schemas","validator"],"journeySteps":[{"journeyId":"self-contract-tunnel","step":1}]},
+    {"id":"symbol:VALIDATE_MAP","name":"validate_map","kind":"function","signature":"validate_map(data, path)","definedIn":{"file":"tools/validate_project_map.py","line":19},"usedBy":[{"file":"tools/build_inspection_package.py","line":14},{"file":"tools/validate_project_map.py","line":56}],"mapNodes":["validator","package_builder"],"journeySteps":[{"journeyId":"self-contract-tunnel","step":2}]},
+    {"id":"symbol:RUN_JOURNEY","name":"run_journey","kind":"function","signature":"run_journey(journey, nodes, edges, perms)","definedIn":{"file":"tools/run_journeys.py","line":18},"usedBy":[{"file":"tools/build_inspection_package.py","line":14}],"mapNodes":["runner","package_builder"],"journeySteps":[{"journeyId":"self-high-level-audit","step":5}]},
+    {"id":"symbol:BUILD_PACKAGE","name":"build_package","kind":"function","signature":"build_package(map_path, journeys_path, output)","definedIn":{"file":"tools/build_inspection_package.py","line":72},"usedBy":[{"file":"tools/build_inspection_package.py","line":104}],"mapNodes":["package_builder","self_assessment"],"journeySteps":[{"journeyId":"self-inspection-tunnel","step":1}]},
+    {"id":"symbol:VIEWER_STATE","name":"state","kind":"object","signature":"{ map, journeys, trace, role, selected }","definedIn":{"file":"viewer/index.html","line":14},"usedBy":[{"file":"viewer/index.html","line":17}],"mapNodes":["viewer"],"journeySteps":[{"journeyId":"self-inspection-tunnel","step":2}]}
+  ]
+}

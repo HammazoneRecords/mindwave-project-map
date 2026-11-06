@@ -70,7 +70,7 @@ def source_reference(project_map: dict, map_path: Path, journeys_path: Path) -> 
     return "\n".join(lines)
 
 
-def build_package(map_path: Path, journeys_path: Path, output: Path) -> tuple[dict, list[dict]]:
+def build_package(map_path: Path, journeys_path: Path, output: Path, variables_path: Path | None = None) -> tuple[dict, list[dict]]:
     project_map = load(map_path)
     journeys = load(journeys_path)
     validate_map(project_map, str(map_path))
@@ -92,6 +92,11 @@ def build_package(map_path: Path, journeys_path: Path, output: Path) -> tuple[di
     write_json(output / "findings.json", findings)
     write_json(output / "links.json", build_links(project_map, journeys, trace))
     (output / "source-reference.md").write_text(source_reference(project_map, map_path, journeys_path), encoding="utf-8")
+    if variables_path is not None:
+        variables = load(variables_path)
+        if variables.get("mapId") != project_map["id"]:
+            raise ValueError(f"{variables_path}: mapId does not match {project_map['id']}")
+        write_json(output / "variables.json", variables)
     (output / "flowchart.mmd").write_text(MERMAID.rstrip() + "\n", encoding="utf-8")
     (output / "pseudocode.txt").write_text(PSEUDOCODE.rstrip() + "\n", encoding="utf-8")
     return trace, findings
@@ -102,9 +107,10 @@ def main() -> int:
     parser.add_argument("--map", required=True, type=Path)
     parser.add_argument("--journeys", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path, help="inspection package directory")
+    parser.add_argument("--variables", type=Path, help="optional Variable Matrix JSON")
     args = parser.parse_args()
     try:
-        trace, findings = build_package(args.map, args.journeys, args.output)
+        trace, findings = build_package(args.map, args.journeys, args.output, args.variables)
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         print(f"INVALID: {exc}")
         return 2

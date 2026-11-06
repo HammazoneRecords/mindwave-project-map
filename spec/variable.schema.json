@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://mindwaveja.com/project-map/schemas/variable.schema.json",
+  "title":"MindWave Project Map Variable Matrix",
+  "type":"object",
+  "required":["schemaVersion","mapId","variables"],
+  "properties":{
+    "schemaVersion":{"type":"string"},
+    "mapId":{"type":"string"},
+    "variables":{"type":"array","items":{"type":"object","required":["id","name","kind","definedIn","mapNodes"],"properties":{"id":{"type":"string"},"name":{"type":"string"},"kind":{"type":"string"},"signature":{"type":"string"},"definedIn":{"type":"object","required":["file","line"],"properties":{"file":{"type":"string"},"line":{"type":"integer"}},"additionalProperties":false},"usedBy":{"type":"array","items":{"type":"object","required":["file","line"],"properties":{"file":{"type":"string"},"line":{"type":"integer"}},"additionalProperties":false}},"mapNodes":{"type":"array","items":{"type":"string"}},"journeySteps":{"type":"array","items":{"type":"object"}}},"additionalProperties":false}}
+  },
+  "additionalProperties":false
+}
