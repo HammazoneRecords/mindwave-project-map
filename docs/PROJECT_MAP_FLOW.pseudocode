@@ -1,0 +1,33 @@
+function project_map_run(map, journey):
+    validate(map)
+    validate(journey)
+    state = journey.initial
+    trace = Trace(map_version=map.version, journey_id=journey.id)
+
+    for step in journey.steps:
+        result = execute(step, map, state)
+        trace.record(step, result)
+        if result.changes_state:
+            state = result.next_state
+        if result.is_unexpected:
+            trace.add_finding(classify(result), evidence=result)
+
+    return trace
+
+function pac_man_time_travel(current_map, proposal, journeys):
+    state_a = snapshot(current_map)
+    state_b = apply_proposal_to_clone(current_map, proposal)
+    if state_b.is_invalid:
+        return BLOCK(proposal, state_b.validation_errors)
+
+    before = [project_map_run(state_a, j) for j in journeys]
+    after  = [project_map_run(state_b, j) for j in journeys]
+    delta = compare(before, after)
+
+    if delta.has_critical_security_regression:
+        return HARD_BLOCK(delta)
+    if delta.has_notable_regression:
+        return HUMAN_REVIEW(delta)
+    if delta.is_improvement:
+        return APPROVAL_READY(delta)
+    return RECORD_AS_NEUTRAL(delta)

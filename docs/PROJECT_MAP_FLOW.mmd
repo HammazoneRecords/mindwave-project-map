@@ -1,0 +1,22 @@
+flowchart TD
+  FACTS[Project facts] --> MAP[Map: nodes, edges, roles, permissions]
+  MAP --> CONTEXT[Role and state context]
+  MAP --> JOURNEY[Journey: test / steer]
+  CONTEXT --> JOURNEY
+  JOURNEY --> TRACE[Trace: observed steps and outcomes]
+  TRACE --> FINDINGS[Findings: gaps, denials, dead ends, risk]
+  FINDINGS -->|no change| KEEP[Keep Map version]
+  FINDINGS -->|change needed| PROPOSAL[Stage change proposal]
+  PROPOSAL --> A[State A: current Map]
+  PROPOSAL --> B[State B: proposed Map]
+  A --> TIME[PAC-MAN TIME TRAVEL]
+  B --> TIME
+  TIME --> COMPARE[Run same Journey and compare delta]
+  COMPARE --> IMPROVEMENT[Improvement]
+  COMPARE --> NEUTRAL[Neutral]
+  COMPARE --> REGRESSION[Regression]
+  IMPROVEMENT --> APPROVE[Approve / promote]
+  NEUTRAL --> RECORD[Record]
+  REGRESSION --> BLOCK[Block / human review]
+  APPROVE --> NEWMAP[New versioned Map]
+  RECORD --> NEWMAP
