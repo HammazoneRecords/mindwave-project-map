@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "example-workspace",
+  "title": "Example Workspace",
+  "nodes": [
+    { "id": "home", "type": "screen", "title": "Home" },
+    { "id": "workspace", "type": "screen", "title": "Workspace" },
+    { "id": "settings", "type": "screen", "title": "Settings" }
+  ],
+  "edges": [
+    { "from": "home", "to": "workspace", "type": "navigation" },
+    { "from": "workspace", "to": "settings", "type": "navigation" }
+  ],
+  "roles": ["visitor", "member", "admin"],
+  "capabilities": ["view", "create", "edit"],
+  "permissions": [
+    { "subject": "role:visitor", "relation": "viewer", "object": "node:home" },
+    { "subject": "role:member", "relation": "viewer", "object": "node:workspace" },
+    { "subject": "role:member", "relation": "creator", "object": "node:workspace" },
+    { "subject": "role:admin", "relation": "editor", "object": "node:settings" }
+  ],
+  "constraints": ["A visitor cannot create in the workspace."]
+}

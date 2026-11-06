@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mindwaveja.com/project-map/schemas/journey.schema.json",
+  "title": "MindWave Project Journey",
+  "type": "object",
+  "required": ["schemaVersion", "id", "map", "initial", "steps"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "title": { "type": "string" },
+    "map": { "type": "string" },
+    "initial": {
+      "type": "object",
+      "required": ["role", "node"],
+      "properties": { "role": { "type": "string" }, "node": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["move", "act", "assert", "checkpoint", "comment"] },
+        "to": { "type": "string" },
+        "action": { "type": "string" },
+        "expect": { "enum": ["allowed", "denied", "pass", "fail"] },
+        "value": {},
+        "label": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

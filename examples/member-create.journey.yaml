@@ -1,0 +1,20 @@
+schemaVersion: 1.0.0
+id: member-create-workspace
+map: example-workspace
+title: Member creates work in the workspace
+initial:
+  role: member
+  node: home
+steps:
+  - type: move
+    to: workspace
+    expect: allowed
+  - type: act
+    action: create
+    expect: allowed
+  - type: checkpoint
+    label: member-created-work
+  - type: assert
+    action: create
+    value: true
+    expect: pass
