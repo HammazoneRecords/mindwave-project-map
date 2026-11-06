@@ -186,15 +186,15 @@ This is the complete path from the current public foundation to the full change-
 
 ### Phase 5 — Generic graph visualizer
 
-- [ ] Build a graph view from any Map file.
-- [ ] Render nodes and edges from Map data rather than hardcoded project names.
-- [ ] Show node type, state, and metadata.
-- [ ] Show role-specific reachable paths.
-- [ ] Show allowed paths and denied paths with different visual states.
-- [ ] Load a Journey into the visualizer.
+- [x] Build a graph view from any Map file.
+- [x] Render nodes and edges from Map data rather than hardcoded project names.
+- [x] Show node type, state, and metadata.
+- [x] Show role-specific reachable paths.
+- [x] Show allowed paths and denied paths with different visual states.
+- [x] Load a Journey into the visualizer.
 - [ ] Play a Journey step by step.
-- [ ] Show the Trace as a route through the Map.
-- [ ] Show Findings beside the affected node or edge.
+- [x] Show the Trace as a route through the Map.
+- [x] Show Findings beside the affected node or edge.
 - [ ] Filter by role, node type, edge type, and Finding kind.
 - [ ] Add keyboard navigation and accessible text output.
 - [ ] Add the MindWaveMine Map as the first built-in visualizer scene.
