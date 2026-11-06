@@ -80,6 +80,19 @@ MindWaveMine R&D Interface → adapter / Map → Journeys → Traces → Finding
 
 The interface remains its own repository. This repository owns the generic Map/Journey model and the adapter or fixture that describes the test surface.
 
+## Run the first real Journeys
+
+The repository includes a Map and three executable Journeys for the MindWaveMine R&D Interface:
+
+```bash
+python3 tools/run_journeys.py \
+  --map examples/mindwavemine.map.json \
+  --journeys examples/mindwavemine.journeys.json \
+  --trace examples/mindwavemine.trace.json
+```
+
+The runner currently proves the declarative layer: allowed and denied movement, role permissions, capabilities, checkpoints, and portable Trace output. It does not pretend to be a live browser/API adapter yet. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
+
 ## Next
 
 - validate Map and Journey documents
