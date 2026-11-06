@@ -52,14 +52,16 @@
 
 ## Visualizer
 
-- [ ] Build a generic graph view from any Map file.
-- [ ] Render nodes and edges from Map data rather than hardcoded project names.
-- [ ] Show role-specific reachable paths.
-- [ ] Show allowed paths and denied paths with different visual states.
-- [ ] Load a Journey into the visualizer.
+The detailed visualizer route lives under `### Phase 5 — Generic graph visualizer` below. This summary stays aligned with the verified state:
+
+- [x] Build a generic graph view from any Map file.
+- [x] Render nodes and edges from Map data rather than hardcoded project names.
+- [x] Show role-specific reachable paths.
+- [x] Show allowed paths and denied paths with different visual states.
+- [x] Load a Journey into the visualizer.
 - [ ] Play a Journey step by step.
-- [ ] Show the Trace as a route through the Map.
-- [ ] Show Findings beside the affected node or edge.
+- [x] Show the Trace as a route through the Map.
+- [x] Show Findings beside the affected node or edge.
 - [ ] Add the MindWaveMine Map as the first built-in visualizer scene.
 - [ ] Add a replaceable user Map upload or file-loading path.
 - [ ] Add the 3D maze skin after the graph view is stable.
