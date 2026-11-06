@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "mindwavemine-rd-interface",
+  "title": "MindWaveMine R&D Interface",
+  "source": {
+    "repository": "https://github.com/HammazoneRecords/MindWaveMine-R-D-Interface",
+    "branch": "main",
+    "capturedFrom": "public repository structure"
+  },
+  "nodes": [
+    {"id":"dashboard","type":"view","title":"Command Deck"},
+    {"id":"concept_creator","type":"view","title":"Precision Fabrication"},
+    {"id":"ingestion","type":"view","title":"Data Stream"},
+    {"id":"neural_bridge","type":"view","title":"Neural Bridge"},
+    {"id":"reports","type":"view","title":"Reports"},
+    {"id":"batch_handoff","type":"view","title":"Transmission Protocol"},
+    {"id":"settings","type":"view","title":"System Calibration"},
+    {"id":"api_health","type":"endpoint","title":"API Health"},
+    {"id":"workspace_status","type":"endpoint","title":"Workspace Status"},
+    {"id":"concept_fabrication","type":"capability","title":"Create Concept"},
+    {"id":"artifact_ingestion","type":"capability","title":"Ingest Artifact"},
+    {"id":"handoff_generation","type":"capability","title":"Generate Handoff"}
+  ],
+  "edges": [
+    {"from":"dashboard","to":"concept_creator","type":"navigation"},
+    {"from":"dashboard","to":"ingestion","type":"navigation"},
+    {"from":"dashboard","to":"neural_bridge","type":"navigation"},
+    {"from":"dashboard","to":"reports","type":"navigation"},
+    {"from":"dashboard","to":"batch_handoff","type":"navigation"},
+    {"from":"dashboard","to":"settings","type":"navigation"},
+    {"from":"dashboard","to":"api_health","type":"reads"},
+    {"from":"settings","to":"workspace_status","type":"reads"},
+    {"from":"concept_creator","to":"concept_fabrication","type":"invokes"},
+    {"from":"ingestion","to":"artifact_ingestion","type":"invokes"},
+    {"from":"batch_handoff","to":"handoff_generation","type":"invokes"}
+  ],
+  "roles": ["operator", "reviewer"],
+  "capabilities": ["view", "read", "create", "ingest", "handoff"],
+  "permissions": [
+    {"subject":"role:operator","relation":"viewer","object":"node:dashboard"},
+    {"subject":"role:operator","relation":"viewer","object":"node:concept_creator"},
+    {"subject":"role:operator","relation":"viewer","object":"node:ingestion"},
+    {"subject":"role:operator","relation":"viewer","object":"node:neural_bridge"},
+    {"subject":"role:operator","relation":"viewer","object":"node:reports"},
+    {"subject":"role:operator","relation":"viewer","object":"node:batch_handoff"},
+    {"subject":"role:operator","relation":"viewer","object":"node:settings"},
+    {"subject":"role:operator","relation":"viewer","object":"node:api_health"},
+    {"subject":"role:reviewer","relation":"viewer","object":"node:dashboard"},
+    {"subject":"role:reviewer","relation":"viewer","object":"node:reports"},
+    {"subject":"role:operator","relation":"creator","object":"node:concept_fabrication"},
+    {"subject":"role:operator","relation":"creator","object":"node:artifact_ingestion"},
+    {"subject":"role:operator","relation":"creator","object":"node:handoff_generation"}
+  ],
+  "constraints": [
+    "The dashboard is the entry point.",
+    "The operator can use the full R&D workflow.",
+    "The reviewer can inspect the dashboard and reports but does not mutate the workspace."
+  ]
+}
