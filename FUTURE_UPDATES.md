@@ -175,6 +175,12 @@ This is the complete path from the current public foundation to the full change-
 - [ ] Mark every live result with target URL, commit, run time, and safety mode.
 - [ ] Add a live-vs-declared comparison report.
 
+- [ ] Add a variable-to-code inspection view.
+- [ ] Link Map nodes to Variable Matrix symbols.
+- [ ] Show actual source context beside pseudocode and flow.
+- [ ] Export the linked inspection package for users.
+- [ ] Keep source references tied to a commit or snapshot.
+
 ### Phase 5 — Generic graph visualizer
 
 - [ ] Build a graph view from any Map file.
