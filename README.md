@@ -34,7 +34,7 @@ Map + Journey → Trace → Findings
 
 ## Repository status
 
-This repository is the public foundation for the architecture. It is intentionally domain-neutral. It does not contain RAAS business material, private project data, credentials, or product-specific canon.
+This repository is the public foundation for the architecture. It is intentionally domain-neutral. It does not contain private business material, private project data, credentials, or product-specific canon.
 
 The first release establishes the vocabulary, schema direction, example Map, and Journey model. Runtime adapters and visual skins can be added without changing the distinction between facts and traversal.
 

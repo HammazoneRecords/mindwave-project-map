@@ -5,17 +5,17 @@
 
 ## Goal
 
-Launch a domain-neutral open-source Project Map repository under MindWave branding without leaking private RAAS material.
+Launch a domain-neutral open-source Project Map repository under MindWave branding without leaking private project material.
 
 ## Current position
 
-- Source architecture inspected in private `HammazoneRecords/raas-maze`.
+- Source architecture inspected in a private predecessor repository.
 - Reusable distinction formalized: Map = facts; Journey = test / steer; Trace = evidence; Finding = diagnosis.
 - New public foundation is being built from a clean extraction, not by publishing the private monorepo.
 
 ## Scope boundary
 
-Keep out: RAAS business documents, pitch material, customer data, private project maps, credentials, and product-specific routes or names.
+Keep out: private business documents, pitch material, customer data, private project maps, credentials, and product-specific routes or names.
 
 ## Planned phases
 
@@ -31,7 +31,7 @@ Keep out: RAAS business documents, pitch material, customer data, private projec
 - Map and Journey schemas are present and valid JSON
 - generic example files are present
 - MIT license is present
-- no private RAAS artifacts are copied
+- no private artifacts are copied
 - remote ref is verified against local commit
 
 ## Evolution log
