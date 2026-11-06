@@ -26,12 +26,12 @@
 - [ ] Validate every Map against `spec/map.schema.json`.
 - [ ] Validate every Journey against `spec/journey.schema.json`.
 - [ ] Add clear validation errors with file path, record, and reason.
-- [ ] Add a test command that runs validation and Journeys together.
+- [x] Add a test command that runs validation and Journeys together.
 - [ ] Add a formal Trace schema.
 - [ ] Add a formal Finding schema.
 - [ ] Separate expected denials from unexpected failures in the output.
-- [ ] Add Journey result summaries that a person can read quickly.
-- [ ] Add exit codes for CI use.
+- [x] Add Journey result summaries that a person can read quickly.
+- [x] Add exit codes for CI use.
 
 ## MindWaveMine live adapter
 
@@ -181,7 +181,7 @@ This is the complete path from the current public foundation to the full change-
 - [ ] Make a clicked Variable Matrix row move the center viewport to the related room or product screen.
 - [ ] Highlight related Map paths and pseudocode/source ranges on selection.
 - [ ] Add room mode, product mode, code mode, Journey mode, and time-travel mode.
-- [ ] Add the linked inspection package export for users.
+- [x] Add the linked inspection package export for users.
 - [ ] Keep source references tied to a commit or snapshot.
 
 ### Phase 5 — Generic graph visualizer

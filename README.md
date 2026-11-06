@@ -104,6 +104,19 @@ python3 tools/run_journeys.py \
 
 The runner currently proves the declarative layer: allowed and denied movement, role permissions, capabilities, checkpoints, and portable Trace output. It does not pretend to be a live browser/API adapter yet. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
 
+## Build a portable inspection package
+
+Use the combined CLI to validate the Map and Journeys, execute every Journey, and export one self-contained inspection package:
+
+```bash
+python3 tools/build_inspection_package.py \\
+  --map examples/mindwavemine.map.json \\
+  --journeys examples/mindwavemine.journeys.json \\
+  --output build/mindwavemine-inspection
+```
+
+The output directory contains `map.json`, `journeys.json`, `trace.json`, `findings.json`, `flowchart.mmd`, and `pseudocode.txt`. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
+
 ## Next
 
 - validate Map and Journey documents
