@@ -1,0 +1,38 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "operator-health-check",
+    "title": "Operator checks the R&D interface",
+    "map": "mindwavemine-rd-interface",
+    "initial": {"role":"operator", "node":"dashboard"},
+    "steps": [
+      {"type":"move","to":"api_health","expect":"allowed"},
+      {"type":"checkpoint","label":"health-endpoint-visible"}
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "operator-fabrication-flow",
+    "title": "Operator creates and hands off a concept",
+    "map": "mindwavemine-rd-interface",
+    "initial": {"role":"operator", "node":"dashboard"},
+    "steps": [
+      {"type":"move","to":"concept_creator","expect":"allowed"},
+      {"type":"act","action":"create","target":"concept_fabrication","expect":"allowed"},
+      {"type":"checkpoint","label":"concept-created"}
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "reviewer-read-only",
+    "title": "Reviewer stays inside the inspection surface",
+    "map": "mindwavemine-rd-interface",
+    "initial": {"role":"reviewer", "node":"dashboard"},
+    "steps": [
+      {"type":"move","to":"reports","expect":"allowed"},
+      {"type":"move","to":"concept_creator","expect":"denied"},
+      {"type":"act","action":"create","target":"concept_fabrication","expect":"denied"},
+      {"type":"checkpoint","label":"read-only-boundary-held"}
+    ]
+  }
+]

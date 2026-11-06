@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0.0",
+  "mapId": "mindwavemine-rd-interface",
+  "journeys": [
+    {
+      "journeyId": "operator-health-check",
+      "role": "operator",
+      "start": "dashboard",
+      "end": "api_health",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move dashboard -> api_health: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "checkpoint: health-endpoint-visible"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "journeyId": "operator-fabrication-flow",
+      "role": "operator",
+      "start": "dashboard",
+      "end": "concept_creator",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move dashboard -> concept_creator: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "act create on concept_fabrication: allowed"
+        },
+        {
+          "step": 3,
+          "outcome": "pass",
+          "detail": "checkpoint: concept-created"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "journeyId": "reviewer-read-only",
+      "role": "reviewer",
+      "start": "dashboard",
+      "end": "reports",
+      "passed": true,
+      "events": [
+        {
+          "step": 1,
+          "outcome": "pass",
+          "detail": "move dashboard -> reports: allowed"
+        },
+        {
+          "step": 2,
+          "outcome": "pass",
+          "detail": "move reports -> concept_creator: denied"
+        },
+        {
+          "step": 3,
+          "outcome": "pass",
+          "detail": "act create on concept_fabrication: denied"
+        },
+        {
+          "step": 4,
+          "outcome": "pass",
+          "detail": "checkpoint: read-only-boundary-held"
+        }
+      ],
+      "findings": []
+    }
+  ]
+}
