@@ -93,7 +93,7 @@ This confirms the current inspection skin can be represented as part of the syst
 ### Current gaps exposed by the self-map
 
 - The viewer has a generic room/product placeholder, not a live product adapter.
-- The Variable Matrix is described but not yet linked to Map identifiers in the viewer.
+- The Variable Matrix is now loaded by the generic viewer in `?fixture=self` mode and filters by selected Map node.
 - Source-code context is not yet linked to Journey steps or Findings.
 - Journey steps can be selected, but full playback is not implemented.
 - Findings are currently represented in the package contract, but the demo self-trace has no generated Findings.
