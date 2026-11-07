@@ -11,10 +11,13 @@
 <section><div class="title">ROOM / PRODUCT · selected surface</div><div class="body"><div class="room" id="room"><h2>select a node</h2><p class="sub">the center column can later host a room visualizer, product screen, website route, or code fallback.</p></div><div class="title" style="margin:12px -12px 0">JOURNEY · test / steer</div><div id="journeys"></div><div class="title" style="margin:12px -12px 0">TRACE · evidence</div><div id="trace"></div><div class="title" style="margin:12px -12px 0">SELECTION · linked context</div><div id="selection" class="card"><span class="sub">click a Map node or Journey step.</span></div></div></section>
 <section><div class="title">VARIABLE / CODE / FINDINGS</div><div class="body"><div class="card"><b>Variable Matrix</b><p class="sub">code relationships will link here by stable IDs.</p><div id="variables">No variable matrix loaded in this generic fixture.</div></div><div id="findings"></div><div class="card"><b>pseudocode</b><pre>click a Journey step to highlight the related execution path.</pre></div></div></section></main>
 <script>
-const state={map:null,journeys:[],trace:null,role:null,selected:null};
+const state={map:null,journeys:[],trace:null,variables:null,role:null,selected:null};
 async function load(){
- const base='../examples/';
- [state.map,state.journeys,state.trace]=await Promise.all(['mindwavemine.map.json','mindwavemine.journeys.json','mindwavemine.trace.json'].map(x=>fetch(base+x).then(r=>r.json())));
+ const self=new URLSearchParams(location.search).get('fixture')==='self';
+ const prefix=self?'project-map-self':'mindwavemine'; const base='../examples/';
+ const files=[`${prefix}.map.json`,`${prefix}.journeys.json`,`${prefix}.trace.json`];
+ [state.map,state.journeys,state.trace]=await Promise.all(files.map(x=>fetch(base+x).then(r=>r.json())));
+ const vr=await fetch(`${base}${prefix}.variables.json`); state.variables=vr.ok?await vr.json():null;
  state.role=state.map.roles[0]; render();
 }
 function can(role,node){return state.map.permissions.some(p=>p.subject==='role:'+role&&p.object==='node:'+node&&p.relation==='viewer')}
@@ -24,9 +27,9 @@ function render(){
  const selected=state.map.nodes.find(n=>n.id===state.selected); room.innerHTML=selected?`<h2>${selected.title}</h2><div class="pill">${selected.type}</div><p>${selected.id}</p><p class="sub">room/product viewport placeholder for this Map node.</p><p>incoming/outgoing links:</p>${state.map.edges.filter(e=>e.from===selected.id||e.to===selected.id).map(e=>`<div class=edge>${e.from} → ${e.to} <span class=pill>${e.type}</span></div>`).join('')}`:'<h2>select a node</h2><p class=sub>one selection. many linked reflections.</p>';
  journeys.innerHTML=state.journeys.map(j=>`<div class=card><b>${j.title}</b><small>${j.id}</small>${j.steps.map((s,i)=>`<div class="trace ${((s.to||s.target||j.initial.node)===state.selected)?'active':''}" onclick="selectStep('${j.id}',${i},'${s.to||s.target||j.initial.node}')">${i+1}. ${s.type} ${s.to||s.target||s.action||s.label||''} <span class=pill>${s.expect||''}</span></div>`).join('')}</div>`).join('');
  trace.innerHTML=state.trace.journeys.map(j=>`<div class=card><b>${j.journeyId}</b> <span class=${j.passed?'ok':'bad'}>${j.passed?'PASS':'FAIL'}</span>${j.events.map((e,i)=>`<div class="trace ${e.detail.includes(state.selected||'§§never')?'active':''}">${i+1}. ${e.detail}</div>`).join('')}</div>`).join('');
- selection.innerHTML=state.selected?`<b>selected:</b> ${state.selected}<br><span class=sub>Map path, Journey steps, Trace events, and source/code links resolve from this shared selection. The current fixture has no Variable Matrix payload yet.</span>`:'<span class=sub>click a Map node or Journey step.</span>';
- findings.innerHTML='<div class="card"><b>Findings</b><p class="ok">No findings in the current declarative demo Trace.</p><p class="sub">Expected denials are preserved as evidence, not misclassified as failures.</p></div>';
-}
+ selection.innerHTML=state.selected?`<b>selected:</b> ${state.selected}<br><span class=sub>Map path, Journey steps, Trace events, variables, and source/code links resolve from this shared selection.</span>`:'<span class=sub>click a Map node or Journey step.</span>';
+ variables.innerHTML=state.variables?state.variables.variables.filter(v=>!state.selected||v.mapNodes.includes(state.selected)).map(v=>`<div class="card"><b>${v.name}</b><small>${v.id} · ${v.kind}</small><div class=sub>${v.signature}</div><div>defined: <span class=pill>${v.definedIn.file}:${v.definedIn.line}</span></div><div>maps: ${v.mapNodes.join(', ')}</div></div>`).join('')||'<span class=sub>no linked variables for this selection.</span>':'<span class=sub>no Variable Matrix supplied for this fixture.</span>';
+ findings.innerHTML='<div class="card"><b>Findings</b><p class="ok">No findings in the current declarative demo Trace.</p><p class="sub">Expected denials are preserved as evidence, not misclassified as failures.</p></div>';}
 function selectStep(journeyId,index,id){state.selected=id;state.selectedJourney=journeyId;state.selectedStep=index;render()}
 function selectNode(id){state.selected=id;state.selectedJourney=null;state.selectedStep=null;render()} role.onchange=()=>{state.role=role.value;render()}; reset.onclick=()=>{state.selected=null;state.selectedJourney=null;state.selectedStep=null;state.role=state.map.roles[0];render()}; load();
 </script></body></html>
