@@ -25,6 +25,7 @@
 - [x] Add linked `links.json` and `source-reference.md` to inspection packages.
 - [x] Add a self-assessment Variable Matrix with Map-node, Journey-step, and source references.
 - [x] Load the self-assessment Variable Matrix into the generic viewer and filter it by selected Map node.
+- [x] Show linked source-file context for selected self-assessment variables.
 
 ## Next build — make the model stronger
 
