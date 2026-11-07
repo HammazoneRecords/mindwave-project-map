@@ -114,8 +114,9 @@ Only mark an item `[x]` after the artifact exists and the result has been exerci
 ## Current blockers / decisions
 
 - Live adapter target and safe execution mode still need to be defined.
-- Visualizer implementation has not started.
+- Visualizer implementation is partial; playback and live product modes remain open.
 - The landing page is specified but not built.
+- Session is paused after a verified handoff.
 
 ## Full route — from Map to Pac-Man Time Travel
 
@@ -354,4 +355,5 @@ That is **Pac-Man time travel**: the project can see what a change does before t
 ## Update log
 
 - 2026-11-06 — Expanded the ledger from the immediate backlog to the full Map → Journey → Trace → Findings → Pac-Man time-travel route.
+- 2026-11-07 — Paused after verified linked source/pseudocode inspection and created `HANDOFF.md`.
 - 2026-11-06 — Created the public update ledger after the first real MindWaveMine Map, Journeys, runner, and Trace landed.
