@@ -9,7 +9,7 @@
 <body><header><div class="sub">MINDWAVE PROJECT MAP · GENERIC INSPECTION SKIN</div><h1>the map is the facts. the journey is the test / steer.</h1><div class="sub">select a node, then watch the related path, trace, and findings resolve together.</div></header>
 <main><section><div class="title">MAP · facts</div><div class="body"><div class="row"><select id="role"></select><button id="reset">reset</button></div><div id="nodes"></div></div></section>
 <section><div class="title">ROOM / PRODUCT · selected surface</div><div class="body"><div class="room" id="room"><h2>select a node</h2><p class="sub">the center column can later host a room visualizer, product screen, website route, or code fallback.</p></div><div class="title" style="margin:12px -12px 0">JOURNEY · test / steer</div><div id="journeys"></div><div class="title" style="margin:12px -12px 0">TRACE · evidence</div><div id="trace"></div><div class="title" style="margin:12px -12px 0">SELECTION · linked context</div><div id="selection" class="card"><span class="sub">click a Map node or Journey step.</span></div></div></section>
-<section><div class="title">VARIABLE / CODE / FINDINGS</div><div class="body"><div class="card"><b>Variable Matrix</b><p class="sub">code relationships will link here by stable IDs.</p><div id="variables">No variable matrix loaded in this generic fixture.</div></div><div id="findings"></div><div class="card"><b>pseudocode</b><pre>click a Journey step to highlight the related execution path.</pre></div></div></section></main>
+<section><div class="title">VARIABLE / CODE / FINDINGS</div><div class="body"><div class="card"><b>Variable Matrix</b><p class="sub">code relationships will link here by stable IDs.</p><div id="variables">No variable matrix loaded in this generic fixture.</div></div><div id="findings"></div><div class="card"><b>pseudocode</b><pre id="pseudocode">click a Journey step to highlight the related execution path.</pre></div><div class="card"><b>actual source</b><div id="source"><span class="sub">select a linked variable to inspect source context.</span></div></div></div></section></main>
 <script>
 const state={map:null,journeys:[],trace:null,variables:null,role:null,selected:null};
 async function load(){
@@ -21,6 +21,14 @@ async function load(){
  state.role=state.map.roles[0]; render();
 }
 function can(role,node){return state.map.permissions.some(p=>p.subject==='role:'+role&&p.object==='node:'+node&&p.relation==='viewer')}
+function esc(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function showSource(){
+ const v=state.variables?.variables.find(x=>x.mapNodes.includes(state.selected));
+ if(!v){source.innerHTML='<span class=sub>select a linked variable to inspect source context.</span>'; return}
+ const file=v.definedIn.file, line=v.definedIn.line;
+ source.innerHTML=`<div class=sub>${esc(file)}:${line}</div><pre>loading source context…</pre>`;
+ try{const text=await fetch('../'+file).then(r=>r.text()); const lines=text.split(/\r?\n/); const from=Math.max(0,line-3),to=Math.min(lines.length,line+2); source.innerHTML=`<div class=sub>${esc(file)}:${line}</div><pre>${lines.slice(from,to).map((x,i)=>`${from+i+1===line?'➜ ':'  '}${from+i+1}: ${esc(x)}`).join('\n')}</pre>`}catch(e){source.innerHTML=`<div class=bad>source unavailable: ${esc(file)}</div>`}
+}
 function render(){
  role.innerHTML=state.map.roles.map(r=>`<option ${r===state.role?'selected':''}>${r}</option>`).join('');
  nodes.innerHTML=state.map.nodes.map(n=>`<div class="node ${n.id===state.selected?'active':''}" onclick="selectNode('${n.id}')"><b>${n.title}</b><small>${n.id} · ${n.type} · ${can(state.role,n.id)?'<span class=ok>reachable</span>':'<span class=bad>restricted</span>'}</small></div>`).join('');
@@ -29,7 +37,6 @@ function render(){
  trace.innerHTML=state.trace.journeys.map(j=>`<div class=card><b>${j.journeyId}</b> <span class=${j.passed?'ok':'bad'}>${j.passed?'PASS':'FAIL'}</span>${j.events.map((e,i)=>`<div class="trace ${e.detail.includes(state.selected||'§§never')?'active':''}">${i+1}. ${e.detail}</div>`).join('')}</div>`).join('');
  selection.innerHTML=state.selected?`<b>selected:</b> ${state.selected}<br><span class=sub>Map path, Journey steps, Trace events, variables, and source/code links resolve from this shared selection.</span>`:'<span class=sub>click a Map node or Journey step.</span>';
  variables.innerHTML=state.variables?state.variables.variables.filter(v=>!state.selected||v.mapNodes.includes(state.selected)).map(v=>`<div class="card"><b>${v.name}</b><small>${v.id} · ${v.kind}</small><div class=sub>${v.signature}</div><div>defined: <span class=pill>${v.definedIn.file}:${v.definedIn.line}</span></div><div>maps: ${v.mapNodes.join(', ')}</div></div>`).join('')||'<span class=sub>no linked variables for this selection.</span>':'<span class=sub>no Variable Matrix supplied for this fixture.</span>';
- findings.innerHTML='<div class="card"><b>Findings</b><p class="ok">No findings in the current declarative demo Trace.</p><p class="sub">Expected denials are preserved as evidence, not misclassified as failures.</p></div>';}
-function selectStep(journeyId,index,id){state.selected=id;state.selectedJourney=journeyId;state.selectedStep=index;render()}
+ findings.innerHTML='<div class="card"><b>Findings</b><p class="ok">No findings in the current declarative demo Trace.</p><p class="sub">Expected denials are preserved as evidence, not misclassified as failures.</p></div>'; showSource();}function selectStep(journeyId,index,id){state.selected=id;state.selectedJourney=journeyId;state.selectedStep=index;render()}
 function selectNode(id){state.selected=id;state.selectedJourney=null;state.selectedStep=null;render()} role.onchange=()=>{state.role=role.value;render()}; reset.onclick=()=>{state.selected=null;state.selectedJourney=null;state.selectedStep=null;state.role=state.map.roles[0];render()}; load();
 </script></body></html>
