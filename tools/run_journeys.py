@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse, json, sys
 from pathlib import Path
 
-RELATION = {"view":"viewer", "read":"viewer", "create":"creator", "ingest":"creator", "handoff":"creator", "edit":"editor"}
+RELATION = {"view":"viewer", "read":"viewer", "create":"creator", "ingest":"creator", "handoff":"creator", "edit":"editor", "delete":"deleter"}
 
 def load(path):
     return json.loads(Path(path).read_text())
