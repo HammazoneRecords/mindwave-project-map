@@ -1,10 +1,10 @@
 # MindWave Project Map
 
-> the map is the facts. the journey is the test / steer.
 
-MindWave Project Map is an open architecture for describing a project as a versioned map of facts, then running journeys across that map to test how the system behaves.
+A project intelligence and validation tool built to make my complex software projects easier to understand, map, inspect, and validate. 
+Connects project structure, expected workflows, execution traces, and findings to identify gaps between intended and actual implementation.
 
-It separates four things that usually get tangled together:
+It separates four things I find that usually get tangled together:
 
 - **Map** — the declared facts: nodes, relationships, roles, capabilities, states, and constraints.
 - **Journey** — an executable test or steering path through the Map.
@@ -54,7 +54,7 @@ LICENSE
 README.md
 ```
 
-## Design invariants
+## invariants
 
 1. A Journey cannot silently rewrite the Map.
 2. A Trace records what happened; it does not become a new fact automatically.
@@ -134,12 +134,6 @@ python3 tools/build_inspection_package.py \
 
 Read the observations in [`docs/SELF_ASSESSMENT.md`](./docs/SELF_ASSESSMENT.md). The assessment names what the current implementation proves and what remains a gap; it does not promote the roadmap into completed functionality.
 
-## Next
+I built MindWave Project Map to give myself a more structured way to understand project architecture, workflows, implementation and gaps between expected and actual behaviour.
 
-- validate Map and Journey documents
-- build a headless Journey runner
-- emit portable Trace JSON
-- add a CLI skin
-- add graph and maze skins
-- add an adapter for the MindWaveMine R&D Interface
-- let users replace the built-in Map with their own project
+As I developed it, I started wondering whether other developers experience the same problem. I'm sharing it to get honest technical feedback, understand whether the problem is common, and find out where the approach could be improved.
