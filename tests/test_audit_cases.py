@@ -493,5 +493,199 @@ class Phase6Cases(AuditCaseBase):
         self.assertIn("untouched", trace["coverage"]["nodes"])
 
 
+class Phase7Cases(AuditCaseBase):
+    """Phase 7 acceptance: each depth feature lands with its own tests."""
+
+    BREWERY_MAP = EXAMPLES / "brewery.map.json"
+    BREWERY_J = EXAMPLES / "brewery.journeys.json"
+
+    def _run(self, map_path, j_path, trace, *extra):
+        return subprocess.run(
+            [sys.executable, str(TOOLS / "run_journeys.py"),
+             "--map", str(map_path), "--journeys", str(j_path), "--trace", str(trace), *extra],
+            capture_output=True, text=True, timeout=60,
+        )
+
+    # ---- 7.1 assert_unreachable ----
+    def test_assert_unreachable_confirms_absence(self):
+        # visitor can never reach the brew kettle from the gate
+        journeys = base_journey(initial={"role": "visitor", "node": "home"},
+                                steps=[{"type": "assert_unreachable", "target": "workspace"}])
+        # visitor needs a legal entry
+        map_data = base_map(entry={"default": ["home"]},
+                            permissions=[{"subject": "role:visitor", "relation": "viewer", "object": "node:home"}])
+        self.write_pair(map_data, journeys)
+        r = self._run(self.map_path, self.journeys_path, self.dir / "t.json")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        trace = json.loads((self.dir / "t.json").read_text())
+        ev = trace["journeys"][0]["events"][0]
+        self.assertTrue(ev["detail"].startswith("assert_unreachable workspace: confirmed"))
+
+    def test_assert_unreachable_violated_is_fatal_finding(self):
+        # member CAN reach workspace from home: the absence claim must fail loudly
+        journeys = base_journey(steps=[
+            {"type": "assert_unreachable", "target": "workspace"},
+        ])
+        self.write_pair(base_map(), journeys)
+        r = self._run(self.map_path, self.journeys_path, self.dir / "t.json")
+        self.assertEqual(r.returncode, 1)
+        self.assert_no_traceback(r)
+        trace = json.loads((self.dir / "t.json").read_text())
+        raw = trace["journeys"][0]["findings"][0]
+        self.assertEqual(raw["kind"], "assert_unreachable_violated")
+        self.assertFalse(trace["journeys"][0]["passed"])
+
+    def test_assert_unreachable_finding_taxonomy(self):
+        journeys = base_journey(steps=[{"type": "assert_unreachable", "target": "workspace"}])
+        self.write_pair(base_map(), journeys)
+        self.run_builder()
+        findings = json.loads((self.dir / "pkg" / "findings.json").read_text())
+        self.assertTrue(findings)
+        self.assertEqual({f["category"] for f in findings}, {"unreachable"})
+        self.assertEqual({f["severity"] for f in findings}, {"high"})
+
+    # ---- 7.2 adapter contract ----
+    def test_declarative_adapter_agrees_with_map(self):
+        # by construction the declarative adapter mirrors the Map: zero disagreements
+        for map_name, j_name in [("mindwavemine.map.json", "mindwavemine.journeys.json"),
+                                 ("brewery.map.json", "brewery.journeys.json")]:
+            r = self._run(EXAMPLES / map_name, EXAMPLES / j_name, self.dir / f"{map_name}.json")
+            self.assertEqual(r.returncode, 0, f"{map_name}: {r.stdout}{r.stderr}")
+            trace = json.loads((self.dir / f"{map_name}.json").read_text())
+            disagreements = [f for res in trace["journeys"] for f in res["findings"]
+                             if f["kind"] == "adapter_disagreement"]
+            self.assertEqual(disagreements, [])
+
+    def test_divergent_adapter_produces_findings_and_never_touches_map(self):
+        # invariant 2: adapter observations flow into Trace/Findings only
+        sys.path.insert(0, str(REPO))
+        from adapters import DeclarativeMapAdapter
+
+        class LyingAdapter(DeclarativeMapAdapter):
+            def act(self, role, action, target):
+                out = super().act(role, action, target)
+                out["allowed"] = not out["allowed"]
+                out["evidence"] = "lying adapter (test stub)"
+                return out
+
+        self.write_pair(base_map(), base_journey(steps=[
+            {"type": "act", "action": "create", "target": "workspace", "expect": "allowed"}]))
+        map_before = self.map_path.read_text()
+
+        from run_journeys import index_map, run_journey
+        from adapters import DeclarativeMapAdapter as D
+        map_data = json.loads(map_before)
+        adapter = LyingAdapter(map_data)
+        nodes, edges, perms = index_map(map_data)
+        result = run_journey(json.loads(self.journeys_path.read_text())[0], nodes, edges, perms, adapter=adapter)
+        disagreements = [f for f in result["findings"] if f["kind"] == "adapter_disagreement"]
+        self.assertEqual(len(disagreements), 1, result["findings"])
+        self.assertEqual(disagreements[0]["adapter"]["evidence"], "lying adapter (test stub)")
+        self.assertEqual(self.map_path.read_text(), map_before, "the Map must be byte-identical (invariant 2)")
+
+        # the contract: probe/act return the required keys
+        d = D(base_map())
+        probe = d.probe("member", "workspace")
+        act = d.act("member", "create", "workspace")
+        self.assertEqual(set(probe), {"reachable", "status"})
+        self.assertEqual(set(act), {"allowed", "evidence"})
+
+    # ---- 7.3 matrix journeys ----
+    def test_matrix_expansion_probes_permission_surface(self):
+        matrix_journey = {
+            "schemaVersion": "1.0.0",
+            "id": "brewery-surface",
+            "map": "brewery-floor",
+            "initial": {"role": "visitor", "node": "gate"},
+            "matrix": {"roles": ["brewer", "visitor"], "targets": ["tap", "cask"], "action": "taste"},
+        }
+        self.write_pair(json.loads(self.BREWERY_MAP.read_text()), [matrix_journey])
+        r = self._run(self.map_path, self.journeys_path, self.dir / "m.json")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        trace = json.loads((self.dir / "m.json").read_text())
+        ids = sorted(res["journeyId"] for res in trace["journeys"])
+        self.assertEqual(ids, [
+            "brewery-surface__brewer__cask",
+            "brewery-surface__brewer__tap",
+            "brewery-surface__visitor__cask",
+            "brewery-surface__visitor__tap",
+        ])
+        self.assertEqual(trace["expandedJourneys"]["brewery-surface__brewer__tap"], "brewery-surface")
+        # the Map was never edited: the fixture file is untouched
+        self.assertIn('"matrix"', self.journeys_path.read_text())
+        # the probe recorded a real permission decision per pair
+        brewer_tap = next(res for res in trace["journeys"] if res["journeyId"] == "brewery-surface__brewer__tap")
+        self.assertTrue(brewer_tap["events"][0]["detail"].endswith(": allowed"))
+
+    def test_matrix_bad_fields_rejected(self):
+        self.write_pair(base_map(), base_journey(matrix={"roles": ["ghost"], "targets": ["workspace"]}))
+        r = self.run_validator()
+        self.assertEqual(r.returncode, 1)
+        self.assertTrue(any("unknown role 'ghost'" in e for e in [r.stdout]), r.stdout)
+
+    # ---- 7.4 differential traces ----
+    def test_diff_traces_reports_regressions(self):
+        self.write_pair(base_map(), base_journey())
+        self._run(self.map_path, self.journeys_path, self.dir / "old.json")
+        # flip the expectation: now the journey fails
+        self.write_pair(base_map(), base_journey(steps=[{"type": "move", "to": "workspace", "expect": "denied"}]))
+        self._run(self.map_path, self.journeys_path, self.dir / "new.json")
+        r = subprocess.run(
+            [sys.executable, str(TOOLS / "diff_traces.py"),
+             str(self.dir / "old.json"), str(self.dir / "new.json")],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("REGRESSION audit-case-journey: pass -> fail", r.stdout)
+        self.assertIn("REGRESSIONS 1", r.stdout)
+        self.assertNotIn("different Map content", r.stdout)  # the Map is identical here; only journeys changed
+
+        # reverse direction: the fix is reported, exit 0
+        r2 = subprocess.run(
+            [sys.executable, str(TOOLS / "diff_traces.py"),
+             str(self.dir / "new.json"), str(self.dir / "old.json")],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(r2.returncode, 0)
+        self.assertIn("FIXED", r2.stdout)
+
+    # ---- 7.5 conditional edges ----
+    def test_conditional_edge_state_guard(self):
+        # the edge home->workspace carries when: {state: night_shift}
+        map_data = base_map(edges=[
+            {"from": "home", "to": "workspace", "type": "navigation", "when": {"state": "night_shift"}},
+        ])
+        # without the set: denied; with the set: allowed — same Map, same role
+        without = base_journey(steps=[{"type": "move", "to": "workspace", "expect": "denied"}])
+        self.write_pair(map_data, without)
+        r = self._run(self.map_path, self.journeys_path, self.dir / "w.json")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        trace = json.loads((self.dir / "w.json").read_text())
+        self.assertTrue(trace["journeys"][0]["events"][0]["detail"].endswith(": denied"))
+
+        with_state = base_journey(steps=[
+            {"type": "comment", "label": "shift begins", "set": {"night_shift": True}},
+            {"type": "move", "to": "workspace", "expect": "allowed"},
+        ])
+        self.write_pair(map_data, with_state)
+        r = self._run(self.map_path, self.journeys_path, self.dir / "s.json")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        trace = json.loads((self.dir / "s.json").read_text())
+        events = trace["journeys"][0]["events"]
+        self.assertEqual(events[0]["setState"], {"night_shift": True})
+        self.assertTrue(events[1]["detail"].endswith(": allowed"))
+        # the Map bytes never changed (state lives in the Trace)
+        self.assertEqual(json.loads(self.map_path.read_text())["edges"][0]["when"], {"state": "night_shift"})
+
+    def test_dead_state_guard_warns(self):
+        map_data = base_map(edges=[
+            {"from": "home", "to": "workspace", "type": "navigation", "when": {"state": "never_set"}},
+        ])
+        errors, warnings = validate_all(map_data, base_journey(), "m.json", "j.json")
+        self.assertEqual(errors, [])
+        self.assertTrue(any("never_set" in w and "no journey step ever sets it" in w for w in warnings),
+                        warnings)
+
+
 if __name__ == "__main__":
     unittest.main()

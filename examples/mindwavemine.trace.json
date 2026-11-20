@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1.0.0",
   "mapId": "mindwavemine-rd-interface",
-  "runId": "57443a20-5b84-4486-baa9-1068bd62abfc",
-  "timestamp": "2026-11-20T04:38:03Z",
-  "toolVersion": "1.0.0",
+  "runId": "1d672be7-954d-47da-861e-6fa263413d79",
+  "timestamp": "2026-11-20T04:54:52Z",
+  "toolVersion": "1.2.0",
   "journeys": [
     {
       "journeyId": "operator-health-check",
@@ -16,7 +16,12 @@
           "step": 1,
           "outcome": "pass",
           "detail": "move dashboard -> api_health: allowed",
-          "node": "api_health"
+          "node": "api_health",
+          "fromNode": "dashboard",
+          "adapter": {
+            "reachable": true,
+            "status": "granted"
+          }
         },
         {
           "step": 2,
@@ -38,13 +43,22 @@
           "step": 1,
           "outcome": "pass",
           "detail": "move dashboard -> concept_creator: allowed",
-          "node": "concept_creator"
+          "node": "concept_creator",
+          "fromNode": "dashboard",
+          "adapter": {
+            "reachable": true,
+            "status": "granted"
+          }
         },
         {
           "step": 2,
           "outcome": "pass",
           "detail": "act create on concept_fabrication: allowed",
-          "node": "concept_fabrication"
+          "node": "concept_fabrication",
+          "adapter": {
+            "allowed": true,
+            "evidence": "permission (role:operator, creator, node:concept_fabrication) present"
+          }
         },
         {
           "step": 3,
@@ -66,19 +80,33 @@
           "step": 1,
           "outcome": "pass",
           "detail": "move dashboard -> reports: allowed",
-          "node": "reports"
+          "node": "reports",
+          "fromNode": "dashboard",
+          "adapter": {
+            "reachable": true,
+            "status": "granted"
+          }
         },
         {
           "step": 2,
           "outcome": "pass",
           "detail": "move reports -> concept_creator: denied",
-          "node": "concept_creator"
+          "node": "concept_creator",
+          "fromNode": "reports",
+          "adapter": {
+            "reachable": false,
+            "status": "no viewer permission"
+          }
         },
         {
           "step": 3,
           "outcome": "pass",
           "detail": "act create on concept_fabrication: denied",
-          "node": "concept_fabrication"
+          "node": "concept_fabrication",
+          "adapter": {
+            "allowed": false,
+            "evidence": "permission (role:reviewer, creator, node:concept_fabrication) absent"
+          }
         },
         {
           "step": 4,
@@ -90,6 +118,150 @@
       "findings": []
     }
   ],
-  "mapSha256": "871a6e3d8870ea9391d686dd8588efb4b85a625c8f0e67d6f675b99d1d4dea35",
-  "journeysSha256": "e55fc1937d51fa2b7428f2c4bc6c500bb89e01ee590a646a779e52daab479d17"
+  "mapSha256": "1eb1ce82a059b2cdb0714448ea15f14e4d2fd4249cac54d41560acef92325e69",
+  "journeysSha256": "e55fc1937d51fa2b7428f2c4bc6c500bb89e01ee590a646a779e52daab479d17",
+  "coverage": {
+    "nodes": {
+      "total": 12,
+      "touched": [
+        "api_health",
+        "concept_creator",
+        "concept_fabrication",
+        "reports"
+      ],
+      "untouched": [
+        "artifact_ingestion",
+        "batch_handoff",
+        "dashboard",
+        "handoff_generation",
+        "ingestion",
+        "neural_bridge",
+        "settings",
+        "workspace_status"
+      ]
+    },
+    "edges": {
+      "total": 11,
+      "used": [
+        [
+          "dashboard",
+          "api_health"
+        ],
+        [
+          "dashboard",
+          "concept_creator"
+        ],
+        [
+          "dashboard",
+          "reports"
+        ]
+      ],
+      "unused": [
+        [
+          "batch_handoff",
+          "handoff_generation"
+        ],
+        [
+          "concept_creator",
+          "concept_fabrication"
+        ],
+        [
+          "dashboard",
+          "batch_handoff"
+        ],
+        [
+          "dashboard",
+          "ingestion"
+        ],
+        [
+          "dashboard",
+          "neural_bridge"
+        ],
+        [
+          "dashboard",
+          "settings"
+        ],
+        [
+          "ingestion",
+          "artifact_ingestion"
+        ],
+        [
+          "settings",
+          "workspace_status"
+        ]
+      ]
+    },
+    "permissions": {
+      "declared": 13,
+      "exercised": [
+        "role:operator|creator|node:concept_fabrication",
+        "role:operator|viewer|node:api_health",
+        "role:operator|viewer|node:concept_creator",
+        "role:reviewer|viewer|node:reports"
+      ],
+      "unexercised": [
+        "role:operator|creator|node:artifact_ingestion",
+        "role:operator|creator|node:handoff_generation",
+        "role:operator|viewer|node:batch_handoff",
+        "role:operator|viewer|node:dashboard",
+        "role:operator|viewer|node:ingestion",
+        "role:operator|viewer|node:neural_bridge",
+        "role:operator|viewer|node:reports",
+        "role:operator|viewer|node:settings",
+        "role:reviewer|viewer|node:dashboard"
+      ]
+    },
+    "roles": {
+      "operator": {
+        "viewableNodes": [
+          "api_health",
+          "batch_handoff",
+          "concept_creator",
+          "dashboard",
+          "ingestion",
+          "neural_bridge",
+          "reports",
+          "settings"
+        ],
+        "reachableNodes": [
+          "api_health",
+          "batch_handoff",
+          "concept_creator",
+          "dashboard",
+          "ingestion",
+          "neural_bridge",
+          "reports",
+          "settings"
+        ],
+        "unreachableByMovement": [
+          "artifact_ingestion",
+          "concept_fabrication",
+          "handoff_generation",
+          "workspace_status"
+        ]
+      },
+      "reviewer": {
+        "viewableNodes": [
+          "dashboard",
+          "reports"
+        ],
+        "reachableNodes": [
+          "dashboard",
+          "reports"
+        ],
+        "unreachableByMovement": [
+          "api_health",
+          "artifact_ingestion",
+          "batch_handoff",
+          "concept_creator",
+          "concept_fabrication",
+          "handoff_generation",
+          "ingestion",
+          "neural_bridge",
+          "settings",
+          "workspace_status"
+        ]
+      }
+    }
+  }
 }

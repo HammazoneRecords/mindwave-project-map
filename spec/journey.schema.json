@@ -8,7 +8,8 @@
   "$defs": {
     "journey": {
       "type": "object",
-      "required": ["schemaVersion", "id", "map", "initial", "steps"],
+      "required": ["schemaVersion", "id", "map", "initial"],
+      "description": "steps is required for plain journeys; matrix journeys may omit it (the matrix defines the steps). tools/validate_project_map.py enforces this semantically.",
       "properties": {
         "schemaVersion": { "type": "string" },
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
@@ -21,7 +22,17 @@
           "properties": { "role": { "type": "string" }, "node": { "type": "string" } },
           "additionalProperties": false
         },
-        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } }
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "matrix": {
+          "type": "object",
+          "description": "Data-driven expansion (Phase 7.3): the journey expands into one probe journey per (role, target) pair before execution. Expansion output is a Journey — never a Map edit.",
+          "properties": {
+            "roles": { "type": "array", "items": { "type": "string" } },
+            "targets": { "type": "array", "items": { "type": "string" } },
+            "action": { "type": "string", "description": "Action to probe with; defaults to 'view' under the effective vocabulary." }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
@@ -29,13 +40,14 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["move", "act", "checkpoint", "comment"] },
+        "type": { "enum": ["move", "act", "checkpoint", "comment", "assert_unreachable"] },
         "to": { "type": "string" },
         "target": { "type": "string" },
         "action": { "type": "string" },
         "expect": { "enum": ["allowed", "denied"] },
         "value": {},
-        "label": { "type": "string" }
+        "label": { "type": "string" },
+        "set": { "type": "object", "description": "State keys to set when this step executes; mutations live in the Trace, never the Map (Phase 7.5)." }
       },
       "additionalProperties": false
     }

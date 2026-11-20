@@ -61,7 +61,13 @@
         "from": { "type": "string" },
         "to": { "type": "string" },
         "type": { "type": "string" },
-        "requires": { "type": "array", "items": { "type": "string" } }
+        "requires": { "type": "array", "items": { "type": "string" } },
+        "when": {
+          "type": "object",
+          "description": "Conditional edge (Phase 7.5): traversable only while the trace state satisfies the guard. State mutations live in the Trace, never the Map.",
+          "properties": { "state": { "type": "string" } },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },

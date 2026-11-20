@@ -112,8 +112,9 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     if errors:
         raise ValueError("\n".join(f"ERROR: {e}" for e in errors))
 
-    results, coverage = execute(project_map, journeys)
-    trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path, coverage=coverage)
+    results, coverage, expanded_from = execute(project_map, journeys)
+    trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path,
+                        coverage=coverage, expanded_from=expanded_from or None)
     findings = findings_from_trace(trace)
 
     variables_findings: list[dict] = []

@@ -33,6 +33,7 @@ STEP_REQUIREMENTS = {
     "act": ["action", "target"],
     "checkpoint": ["label"],
     "comment": [],
+    "assert_unreachable": ["target"],
 }
 
 
@@ -127,6 +128,12 @@ def validate_map(data, path):
             "(declare 'entry' to enforce start semantics)"
         )
 
+    guarded_states: set = set()
+    for i, e in enumerate(data["edges"]):
+        when = e.get("when")
+        if when and isinstance(when, dict) and when.get("state"):
+            guarded_states.add(when["state"])
+
     used_relations: set = set()
     for i, pmt in enumerate(data["permissions"]):
         p = f"{path}:permissions[{i}]"
@@ -218,7 +225,36 @@ def validate_journeys(data, map_data, path):
                     f"'{j['initial']['role']}' (entry allows: {sorted(allowed_starts) or '(none)'})"
                 )
 
-        for k, s in enumerate(j["steps"]):
+        matrix = j.get("matrix")
+        if matrix is not None:
+            # Phase 7.3: matrix fields are validated here; the runner's
+            # expansion output is Journeys only — never a Map edit
+            m_roles = matrix.get("roles", [])
+            m_targets = matrix.get("targets", [])
+            m_action = matrix.get("action", "view")
+            if not m_roles or not m_targets:
+                errors.append(f"{p}.matrix: both 'roles' and 'targets' must be non-empty lists")
+            for r in m_roles:
+                if r not in roles:
+                    errors.append(f"{p}.matrix: unknown role '{r}'")
+            for t in m_targets:
+                if t not in node_ids:
+                    errors.append(f"{p}.matrix: unknown target node '{t}'")
+            if m_action not in action_vocab:
+                errors.append(f"{p}.matrix: unknown probe action '{m_action}'")
+            else:
+                expanded = [f"{jid}__{r}__{t}" for r in m_roles for t in m_targets]
+                for cid in expanded:
+                    if cid in seen_journey_ids:
+                        errors.append(
+                            f"{p}.matrix: expansion id collision '{cid}' (also at {seen_journey_ids[cid]})"
+                        )
+                    else:
+                        seen_journey_ids[cid] = f"{p}.matrix expansion"
+        elif "steps" not in j:
+            errors.append(f"{p}: journey has no steps (a plain journey needs steps; a matrix journey uses 'matrix')")
+
+        for k, s in enumerate(j.get("steps", [])):
             sp = f"{p}.steps[{k}]"
             styp = s["type"]
             for field in STEP_REQUIREMENTS.get(styp, []):
@@ -236,6 +272,25 @@ def validate_journeys(data, map_data, path):
                 target = s.get("target")
                 if target is not None and target not in node_ids:
                     errors.append(f"{sp}: unknown target node '{target}'")
+            if styp == "assert_unreachable" and s.get("target") not in node_ids:
+                errors.append(f"{sp}: unknown target node '{s.get('target')}' for absence claim")
+
+    # Phase 7.5: a conditional edge whose state key no journey ever sets is a dead guard
+    guarded = set()
+    for e in map_data["edges"]:
+        when = e.get("when")
+        if when and isinstance(when, dict) and when.get("state"):
+            guarded.add(when["state"])
+    set_keys = set()
+    for j in data:
+        for s in j.get("steps", []):
+            if isinstance(s.get("set"), dict):
+                set_keys.update(s["set"].keys())
+    for key in sorted(guarded - set_keys):
+        warnings.append(
+            f"{path}: edge guard on state '{key}' but no journey step ever sets it; "
+            "that edge is untraversable as declared"
+        )
 
     return errors, warnings
 
