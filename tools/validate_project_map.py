@@ -119,6 +119,12 @@ def validate_map(data, path):
                 f"relations ({sorted(relations)}); it is dead weight unless something grants it"
             )
 
+    if "entry" not in data:
+        warnings.append(
+            f"{path}: no entry nodes declared; journey start positions are unchecked "
+            "(interim — REMEDIATION_PLAN.md Phase 6 enforces entry semantics)"
+        )
+
     return errors, warnings
 
 

@@ -100,12 +100,12 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 
 ### Phase 5 — Tests + CI + map doctor (M) — audit §5 step 5
 
-- [ ] 5.1 `tests/` — stdlib `unittest`; per-case ports of A01–A23 with the audit's ideal outcomes asserted; committed fixtures for every formerly-silent case.
-- [ ] 5.2 Property test: seeded random Map/Journey generator proving "validator accepts ⟹ runner never crashes" (no Hypothesis).
-- [ ] 5.3 `.github/workflows/validate.yml` — on PR: schema + semantic validation of all examples, journey runs, both package builds, full test suite, package artifacts uploaded, fail on new findings vs baseline.
-- [ ] 5.4 `tools/map_doctor.py` — orphan nodes, unreachable-per-role, unused capabilities, edges without any permission, duplicate edges, dangling variable references; exit 1 on errors, warnings listed.
+- [x] 5.1 `tests/` — stdlib `unittest`; per-case ports of A01–A23 with the audit's ideal outcomes asserted; committed fixtures for every formerly-silent case.
+- [x] 5.2 Property test: seeded random Map/Journey generator proving "validator accepts ⟹ runner never crashes" (no Hypothesis).
+- [x] 5.3 `.github/workflows/validate.yml` — on PR: schema + semantic validation of all examples, journey runs, both package builds, full test suite, package artifacts uploaded, fail on new findings vs baseline.
+- [x] 5.4 `tools/map_doctor.py` — orphan nodes, unreachable-per-role, unused capabilities, edges without any permission, duplicate edges, dangling variable references; exit 1 on errors, warnings listed.
 
-**Accept:** CI green on the repo itself; the doctor flags the A01/A13/A14 classes on any authored Map.
+**Accept (met 2026-11-20, local):** suite green (34 tests: 23-case audit suite + property fuzz at 300 seeds + 5 guard tests + links/schema conformance); the doctor flags the A01/A13/A14 classes on any authored Map; CI defined — first cloud run happens on the next push.
 
 ### Phase 6 — Quick wins (S each) — audit §5.1 / §5.4
 
@@ -149,3 +149,5 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - 2026-11-20 — **Phases 1 + 2 landed in one commit** (deviation from one-commit-per-phase: the runner edit carries both the validation gate and the overwrite guard): new `schema_lite.py` + `vocabulary.py`, rewritten validator (collect-all-errors, never crashes), schemas describe reality, runner and builder gated, vacuous denial replaced, `fsutils.py` guard + atomic writes, 5 regression tests. Verification: all fixtures valid, `mindwavemine.trace.json` regenerates byte-identical, packages deterministic, 16/16 adversarial cases ideal, 5/5 unit tests. Remaining acceptance gap: A04/A12 warn instead of enforce (Phase 6), the 23-case suite + CI + doctor (Phase 5).
 - 2026-11-20 — **Phase 3 landed** (commit `162149c`): trace provenance (runId/timestamp/toolVersion/mapSha256/journeysSha256), optional Map/Journey `version`, Finding taxonomy in `tools/findings.py` (category/severity/confidence by rule), A17 dead branch repaired, A18 distinct categories, trace events carry exact node references.
 - 2026-11-20 — **Phase 4 landed**: exact `links.json` from structured trace nodes (D5), Map-derived `flowchart.mmd`/`pseudocode.txt` via `tools/map_derived.py` (D6), Variable Matrix verified reference-by-reference via `tools/verify_variables.py` and regenerated to current truth (D9), README + SELF_ASSESSMENT updated to post-remediation reality (D10). Deploy key for this repo registered (`mindwave-map-sandbox`) and stored in `skills/mindwave-deploy`; pushes unblocked.
+- 2026-11-20 — **Phase 5 landed**: 23-case adversarial suite (`tests/test_audit_cases.py`, A01–A23; A04/A12 assert the interim warning behavior until Phase 6), seeded property test (`tests/test_property.py`, 300 seeds, clean/chaos generator modes), `tools/map_doctor.py` (orphans, unreachable-per-role, unused capabilities, untraversable edges, duplicate edges/nodes, dangling matrix refs, no-entry warning), `.github/workflows/validate.yml` (fixtures + doctor + runs + packages + suite + findings-vs-baseline gate + artifacts), baseline `tests/baseline/findings-count.txt` = 0. Suite: 34 tests green locally.
+- 2026-11-20 — Phase 4 fix-up found by the new suite: `journeySteps` now also links checkpoint steps to the node where the trace resolved them (event index == step index), and the validator's interim no-entry warning is real.

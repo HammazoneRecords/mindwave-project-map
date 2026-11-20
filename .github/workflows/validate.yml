@@ -1,0 +1,58 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate every example fixture (schema + semantic)
+        run: |
+          set -e
+          python3 tools/validate_project_map.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json
+          python3 tools/validate_project_map.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json
+          python3 tools/validate_project_map.py --map examples/workspace.map.json --journeys examples/member-create.journey.json
+
+      - name: map doctor on every fixture
+        run: |
+          set -e
+          python3 tools/map_doctor.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json
+          python3 tools/map_doctor.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json --variables examples/project-map-self.variables.json
+
+      - name: Run journeys
+        run: |
+          set -e
+          python3 tools/run_journeys.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json --trace build/mindwavemine.trace.json
+          python3 tools/run_journeys.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json --trace build/self.trace.json
+
+      - name: Build both inspection packages
+        run: |
+          set -e
+          python3 tools/build_inspection_package.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json --output build/mindwavemine-inspection
+          python3 tools/build_inspection_package.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json --variables examples/project-map-self.variables.json --output build/self-inspection
+
+      - name: Full test suite (23-case audit suite + property fuzz + guards)
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Fail on new findings vs baseline
+        run: |
+          count=$(python3 -c "import json;print(len(json.load(open('build/mindwavemine-inspection/findings.json'))))")
+          baseline=$(cat tests/baseline/findings-count.txt)
+          echo "findings=$count baseline=$baseline"
+          if [ "$count" -gt "$baseline" ]; then
+            echo "NEW FINDINGS above baseline ($count > $baseline)"; exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inspection-packages
+          path: build/

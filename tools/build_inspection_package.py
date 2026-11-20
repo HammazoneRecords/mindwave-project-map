@@ -60,10 +60,21 @@ def findings_from_variables(variables_findings: list[dict], trace: dict) -> list
 def build_links(project_map: dict, journeys: list[dict], trace: dict) -> dict:
     """Exact node -> journey-step -> trace-event links (audit D5, Phase 4.1).
 
-    A journey step references a node only when its own `to`/`target` names
-    that node. A trace event references a node only through the runner's
-    structured `event.node` field — never by substring-matching detail text.
+    A journey step references a node when its own `to`/`target` names that
+    node, OR when the trace resolved that step to the node (checkpoints run
+    at the current position — event index == step index, so the trace gives
+    the exact step->node mapping). Trace events reference a node only through
+    the runner's structured `event.node` field — never by substring matching.
     """
+    # step index (1-based) -> node, per journey, as resolved by the runner
+    resolved_step_nodes: dict[str, dict[int, str]] = {}
+    for result in trace["journeys"]:
+        mapping = {}
+        for index, event in enumerate(result["events"], 1):
+            if event.get("node") is not None:
+                mapping[index] = event["node"]
+        resolved_step_nodes[result["journeyId"]] = mapping
+
     links = []
     for node in project_map["nodes"]:
         node_id = node["id"]
@@ -71,7 +82,8 @@ def build_links(project_map: dict, journeys: list[dict], trace: dict) -> dict:
         trace_events = []
         for journey in journeys:
             for index, step in enumerate(journey["steps"], 1):
-                if (step.get("to") or step.get("target")) == node_id:
+                target = step.get("to") or step.get("target")
+                if target == node_id or resolved_step_nodes.get(journey["id"], {}).get(index) == node_id:
                     journey_steps.append({"journeyId": journey["id"], "step": index})
         for result in trace["journeys"]:
             for index, event in enumerate(result["events"], 1):
