@@ -229,6 +229,11 @@ def validate_journeys(data, map_data, path):
         if matrix is not None:
             # Phase 7.3: matrix fields are validated here; the runner's
             # expansion output is Journeys only — never a Map edit
+            if "steps" in j:
+                warnings.append(
+                    f"{p}: journey declares both 'matrix' and 'steps'; the matrix expansion "
+                    "replaces the steps, which are ignored"
+                )
             m_roles = matrix.get("roles", [])
             m_targets = matrix.get("targets", [])
             m_action = matrix.get("action", "view")
@@ -251,8 +256,26 @@ def validate_journeys(data, map_data, path):
                         )
                     else:
                         seen_journey_ids[cid] = f"{p}.matrix expansion"
+            # A04 applies to expansions too (re-audit L4): every expanded role
+            # must be allowed to enter the base journey's initial node
+            if entry is not None and j["initial"]["role"] in roles:
+                base_allowed = set(role_entries.get(j["initial"]["role"], default_nodes))
+                if j["initial"]["node"] not in base_allowed:
+                    pass  # already reported by the base-journey entry check above
+                for r in m_roles:
+                    if r in roles:
+                        allowed_starts = set(role_entries.get(r, default_nodes))
+                        if j["initial"]["node"] not in allowed_starts:
+                            errors.append(
+                                f"{p}.matrix: expanded role '{r}' cannot legally enter "
+                                f"'{j['initial']['node']}' (entry allows: {sorted(allowed_starts) or '(none)'})"
+                            )
         elif "steps" not in j:
             errors.append(f"{p}: journey has no steps (a plain journey needs steps; a matrix journey uses 'matrix')")
+        elif not j.get("steps"):
+            warnings.append(
+                f"{p}: journey has zero steps; the run would pass vacuously (re-audit L3)"
+            )
 
         for k, s in enumerate(j.get("steps", [])):
             sp = f"{p}.steps[{k}]"

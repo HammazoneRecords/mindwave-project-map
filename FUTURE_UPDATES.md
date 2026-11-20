@@ -89,7 +89,7 @@ The detailed visualizer route lives under `### Phase 5 — Generic graph visuali
 - [ ] Add a code of conduct.
 - [ ] Add issue templates for Maps, Journeys, adapters, and visualizer findings.
 - [ ] Add a changelog.
-- [ ] Add CI for schema validation and Journey execution.
+- [x] Add CI for schema validation and Journey execution (.github/workflows/validate.yml).
 - [ ] Add a public demo command that works from a fresh clone.
 - [ ] Add the landing page.
 - [ ] Replace placeholder repository and documentation links.
@@ -127,15 +127,15 @@ This is the complete path from the current public foundation to the full change-
 - [x] Validate every Map against `spec/map.schema.json` (vendored dependency-free validator).
 - [x] Validate every Journey against `spec/journey.schema.json`.
 - [x] Add clear validation errors with file path, record, and reason (collect-all-errors, never crashes).
-- [ ] Add a formal `spec/trace.schema.json`.
-- [ ] Add a formal `spec/finding.schema.json`.
+- [x] Add a formal `spec/trace.schema.json` (with run provenance + coverage).
+- [x] Add a formal `spec/finding.schema.json` (with rule-based taxonomy).
 - [ ] Add stable IDs to Map nodes, edges, roles, capabilities, Journeys, Traces, and Findings.
-- [ ] Add Map version and source commit metadata to every Trace.
+- [x] Add Map version and content-hash metadata to every Trace (mapSha256/journeysSha256/runId/timestamp/toolVersion).
 - [ ] Add Journey version metadata to every Trace.
 - [ ] Define the difference between `expected_denial`, `unexpected_denial`, `broken_edge`, `missing_capability`, and `security_regression`.
-- [ ] Add deterministic timestamps or run IDs so Traces can be compared.
-- [ ] Add a single test command for validation plus Journey execution.
-- [ ] Add exit codes for CI use.
+- [x] Add deterministic run IDs and timestamps so Traces can be compared.
+- [x] Add a single test command for validation plus Journey execution (`unittest discover` + CI).
+- [x] Add exit codes for CI use (0 pass / 1 findings / 2 invalid).
 
 ### Phase 2 — Build the headless engine
 
@@ -144,7 +144,7 @@ This is the complete path from the current public foundation to the full change-
 - [ ] Add a graph traversal service that supports directed and undirected edges.
 - [ ] Add role switching as an explicit Journey step.
 - [ ] Add state changes as explicit Journey steps.
-- [ ] Add assertions for node reachability.
+- [x] Add assertions for node reachability (`assert_unreachable` steps).
 - [ ] Add assertions for capability access.
 - [ ] Add assertions for expected state.
 - [ ] Add checkpoints that survive replay.
@@ -324,7 +324,7 @@ This is the complete path from the current public foundation to the full change-
 - [ ] Add a code of conduct.
 - [ ] Add issue templates for Maps, Journeys, adapters, visualizer findings, and change proposals.
 - [ ] Add a changelog.
-- [ ] Add CI for schemas, runner tests, examples, and visualizer build.
+- [x] Add CI for schemas, runner tests, examples, and viewer conformance.
 - [ ] Add security reporting guidance.
 - [ ] Add reproducible demo instructions.
 - [ ] Add a live public demo using the MindWaveMine Map.

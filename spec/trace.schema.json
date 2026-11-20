@@ -15,6 +15,11 @@
     "mapSha256": {"type":"string", "pattern": "^[0-9a-f]{64}$"},
     "journeysSha256": {"type":"string", "pattern": "^[0-9a-f]{64}$"},
     "coverage": {"type":"object"},
+    "expandedJourneys": {
+      "type":"object",
+      "description":"Present when matrix journeys were expanded: concrete journey id -> base journey id (Phase 7.3).",
+      "additionalProperties": {"type":"string"}
+    },
     "journeys": {"type":"array", "items":{"$ref":"#/$defs/result"}}
   },
   "$defs": {
@@ -23,7 +28,7 @@
       "required":["journeyId","role","start","end","passed","events","findings"],
       "properties": {
         "journeyId":{"type":"string"}, "role":{"type":"string"}, "start":{"type":"string"}, "end":{"type":"string"},
-        "passed":{"type":"boolean"}, "events":{"type":"array"}, "findings":{"type":"array", "items":{"$ref":"#/$defs/finding"}}
+        "passed":{"type":"boolean"}, "events":{"type":"array", "items":{"type":"object"}}, "findings":{"type":"array", "items":{"$ref":"#/$defs/finding"}}
       }
     },
     "finding": {"type":"object", "required":["kind","step"], "properties":{"kind":{"type":"string"},"step":{"type":"integer"}}}

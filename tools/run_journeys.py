@@ -194,14 +194,20 @@ def run_journey(journey, nodes, edges, perms, vocab=None, role_caps=None, adapte
             # Phase 7.1: a proof of absence. The target must NOT be reachable
             # from the current position as this role via traversable edges.
             target = step["target"]
-            reachable = _reachable_from(current, role, nodes, edges, state, role_caps, perms)
-            violated = target in reachable and target != current
-            event(i, "fail" if violated else "pass",
-                  f"assert_unreachable {target}: {'REACHABLE (violated)' if violated else 'confirmed unreachable'}"
-                  + f" [explored {len(reachable)} nodes]",
-                  node=target)
-            if violated:
-                findings.append({"kind": "assert_unreachable_violated", "step": i, "from": current, "target": target})
+            if target == current:
+                # re-audit L2: a self-referential claim proves nothing — record
+                # it honestly instead of fabricating "confirmed unreachable"
+                event(i, "pass", f"assert_unreachable {target}: vacuous claim (the journey stands on the target)", node=target)
+                findings.append({"kind": "assert_unreachable_vacuous", "step": i, "target": target})
+            else:
+                reachable = _reachable_from(current, role, nodes, edges, state, role_caps, perms)
+                violated = target in reachable
+                event(i, "fail" if violated else "pass",
+                      f"assert_unreachable {target}: {'REACHABLE (violated)' if violated else 'confirmed unreachable'}"
+                      + f" [explored {len(reachable)} nodes]",
+                      node=target)
+                if violated:
+                    findings.append({"kind": "assert_unreachable_violated", "step": i, "from": current, "target": target})
         elif typ == "checkpoint":
             event(i, "pass", f"checkpoint: {step['label']}", node=current)
         elif typ == "comment":
@@ -247,6 +253,7 @@ def compute_coverage(project_map: dict, results: list) -> dict:
             perms_by_role.setdefault(subject[5:], set()).add(obj[5:])
 
     edge_sets = set(edges)
+    role_caps = project_map.get("roleCapabilities") or {}
     role_coverage = {}
     for role in project_map["roles"]:
         viewable = perms_by_role.get(role, set())
@@ -255,10 +262,19 @@ def compute_coverage(project_map: dict, results: list) -> dict:
         reachable.update(frontier)
         while frontier:
             current = frontier.pop()
-            for (frm, to) in edge_sets:
-                if frm == current and to in viewable and to not in reachable:
-                    reachable.add(to)
-                    frontier.append(to)
+            for edge in project_map["edges"]:
+                if edge["from"] != current or edge["to"] in reachable:
+                    continue
+                # static reachability mirrors the runner: permission + requires,
+                # conditional (when.state) edges count as closed until a journey sets the state
+                if edge["to"] not in viewable:
+                    continue
+                if any(c not in role_caps.get(role, []) for c in edge.get("requires", [])):
+                    continue
+                if (edge.get("when") or {}).get("state"):
+                    continue
+                reachable.add(edge["to"])
+                frontier.append(edge["to"])
         role_coverage[role] = {
             "viewableNodes": sorted(viewable & set(node_ids)),
             "reachableNodes": sorted(reachable),

@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from vocabulary import CAPABILITY_RELATIONS  # noqa: E402
+from vocabulary import effective_vocabulary  # noqa: E402
 
 
 def _load(path):
@@ -52,6 +52,23 @@ def doctor(project_map: dict, journeys: list | None = None, variables: dict | No
     node_set = set(node_ids)
 
     roles = list(project_map["roles"])
+    role_caps = project_map.get("roleCapabilities") or {}
+    vocab = effective_vocabulary(project_map)
+
+    def traversable_static(edge, role):
+        """Mirror the runner's _traversable for static analysis: permission +
+        requires + not when-guarded (guard state is journey-local, so a
+        conditional edge is statically closed — reported separately)."""
+        target = edge["to"]
+        if (f"role:{role}", "viewer", f"node:{target}") not in {
+            (p["subject"], p["relation"], p["object"]) for p in perms
+        }:
+            return False
+        if any(c not in role_caps.get(role, []) for c in edge.get("requires", [])):
+            return False
+        if (edge.get("when") or {}).get("state"):
+            return False
+        return True
     edge_pairs: dict[tuple, int] = {}
     has_edge = {nid: False for nid in node_ids}
     for edge in project_map["edges"]:
@@ -89,38 +106,56 @@ def doctor(project_map: dict, journeys: list | None = None, variables: dict | No
         reachable.update(frontier)
         while frontier:
             current = frontier.pop()
-            for (frm, to) in edge_pairs:
-                if frm == current and to not in reachable:
-                    # a role can traverse an edge only if it can see the destination
-                    if to in viewers.get(role, set()):
-                        reachable.add(to)
-                        frontier.append(to)
+            for edge in project_map["edges"]:
+                if edge["from"] == current and edge["to"] not in reachable:
+                    if traversable_static(edge, role):
+                        reachable.add(edge["to"])
+                        frontier.append(edge["to"])
         dead = sorted(
             node_set - reachable - actionable.get(role, set())
         )  # action-target nodes are invoked, not moved into — not movement gaps
         if dead:
             warnings.append(
                 f"role '{role}' can never reach: {', '.join(dead)} "
-                "(no viewer permission on the destination or no connecting edge)"
+                "(no viewer permission, missing capability for edge.requires, unmet conditional "
+                "state guard, or no connecting edge)"
             )
 
     used_relations = {p["relation"] for p in perms}
-    for cap in project_map.get("capabilities", []):
-        relations = CAPABILITY_RELATIONS.get(cap, set())
-        if relations and not (relations & used_relations):
+    # capability warnings map through the Map's EFFECTIVE vocabulary
+    # (re-audit M2/NA14: the default CRUD table lied about custom vocabularies)
+    for cap_name in sorted(project_map.get("capabilities", [])):
+        relation = vocab.get(cap_name)
+        if relation and relation not in used_relations:
             warnings.append(
-                f"capability '{cap}' is declared but no permission uses any of its "
-                f"relations ({sorted(relations)}) (A01): dead weight unless something grants it"
+                f"capability '{cap_name}' is declared but no permission uses its "
+                f"relation '{relation}' (A01): dead weight unless something grants it"
             )
+    # a roleCapabilities grant nothing consumes is equally dead (NA4)
+    required_caps = {c for e in project_map["edges"] for c in e.get("requires", [])}
+    for role, caps in role_caps.items():
+        for cap in caps:
+            if cap not in required_caps:
+                warnings.append(
+                    f"roleCapabilities grants '{cap}' to '{role}' but no edge.requires "
+                    "names it; the grant does nothing"
+                )
 
     action_targets = set().union(*actionable.values()) if actionable else set()
     for edge in project_map["edges"]:
         if edge["to"] not in node_set:
             continue
-        if not any(edge["to"] in vs for vs in viewers.values()) and edge["to"] not in action_targets:
+        guard = (edge.get("when") or {}).get("state")
+        if guard:
+            warnings.append(
+                f"edge {edge['from']} -> {edge['to']} is conditional on state '{guard}'; "
+                "static reachability treats it as closed until a journey sets that state"
+            )
+            continue
+        if not any(traversable_static(edge, role) for role in roles) and edge["to"] not in action_targets:
             warnings.append(
                 f"edge {edge['from']} -> {edge['to']}: no role can traverse it "
-                "(nobody holds viewer on the destination and it is not an action target)"
+                "(viewer permission missing, capability unmet, or no connecting edge)"
             )
 
     if "entry" not in project_map:

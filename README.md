@@ -57,6 +57,7 @@ tools/
   fsutils.py                  # overwrite guard + atomic writes
   schema_lite.py              # vendored dependency-free JSON Schema subset validator
   vocabulary.py               # default action->relation vocabulary; Map-level override
+  project_map_flow.py         # exports the tool pipeline's own flowchart/pseudocode (clearly labeled)
 adapters/
   base.py                     # adapter contract (probe/act) + DeclarativeMapAdapter
 spec/

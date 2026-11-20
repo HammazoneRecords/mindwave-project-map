@@ -39,13 +39,26 @@ def main() -> int:
     args = ap.parse_args()
 
     old, new = load_trace(args.old), load_trace(args.new)
+    # malformed traces get a clean error, never a traceback (re-audit M3)
+    if not isinstance(old, dict) or not isinstance(new, dict) or \
+       not isinstance(old.get("journeys"), list) or not isinstance(new.get("journeys"), list):
+        print("ERROR: traces must be objects with a 'journeys' array")
+        return 2
+    try:
+        return _report(old, new)
+    except (KeyError, TypeError, AttributeError) as exc:
+        print(f"ERROR: malformed trace documents ({type(exc).__name__}: {exc})")
+        return 2
+
+
+def _report(old: dict, new: dict) -> int:
     regressions = 0
 
     old_by_id = {r["journeyId"]: r for r in old.get("journeys", [])}
     new_by_id = {r["journeyId"]: r for r in new.get("journeys", [])}
 
-    print(f"old: mapId={old.get('mapId')} mapSha256={str(old.get('mapSha256'))[:12]}… runId={old.get('runId', '?')[:8]}…")
-    print(f"new: mapId={new.get('mapId')} mapSha256={str(new.get('mapSha256'))[:12]}… runId={new.get('runId', '?')[:8]}…")
+    print(f"old: mapId={old.get('mapId')} mapSha256={str(old.get('mapSha256'))[:12]}… runId={str(old.get('runId') or '?')[:8]}…")
+    print(f"new: mapId={new.get('mapId')} mapSha256={str(new.get('mapSha256'))[:12]}… runId={str(new.get('runId') or '?')[:8]}…")
     if old.get("mapSha256") and new.get("mapSha256") and old["mapSha256"] != new["mapSha256"]:
         print("NOTE: traces executed different Map content (sha256 differs)")
     elif old.get("mapId") != new.get("mapId"):

@@ -82,6 +82,11 @@ class AuditCaseBase(unittest.TestCase):
         self.map_path.write_text(json.dumps(map_data, indent=2))
         self.journeys_path.write_text(json.dumps(journeys if journeys is not None else base_journey(), indent=2))
 
+    def run_tool(self, *args):
+        return subprocess.run(
+            [sys.executable, *args], capture_output=True, text=True, timeout=60
+        )
+
     def run_validator(self) -> subprocess.CompletedProcess:
         return subprocess.run(
             [sys.executable, str(TOOLS / "validate_project_map.py"),
@@ -685,6 +690,158 @@ class Phase7Cases(AuditCaseBase):
         self.assertEqual(errors, [])
         self.assertTrue(any("never_set" in w and "no journey step ever sets it" in w for w in warnings),
                         warnings)
+
+
+class ReAuditCases(AuditCaseBase):
+    """Regression pins for the 2026-11-20 independent re-audit findings.
+    Each test reproduces an attack the external auditor invented and asserts
+    the post-fix behavior."""
+
+    def _fix_map(self, **overrides):
+        m = {
+            "schemaVersion": "1.0.0", "id": "fix-map",
+            "nodes": [{"id": "a", "type": "screen"}, {"id": "b", "type": "screen"}],
+            "edges": [{"from": "a", "to": "b", "type": "nav"}],
+            "roles": ["r1", "r2"],
+            "capabilities": ["view", "stamp"],
+            "permissions": [{"subject": "role:r1", "relation": "viewer", "object": "node:a"},
+                            {"subject": "role:r1", "relation": "creator", "object": "node:b"},
+                            {"subject": "role:r2", "relation": "viewer", "object": "node:b"}],
+            "entry": {"default": ["a"]},
+            "roleCapabilities": {"r1": ["stamp"], "r2": ["stamp"]},
+        }
+        m.update(overrides)
+        return m
+
+    def _edge_requires_edge(self, m):
+        # give 'stamp' a consumer so roleCapabilities grants are not dead
+        m["edges"][0]["requires"] = ["stamp"]
+        return m
+
+    def test_h1_builder_handles_matrix_journeys(self):
+        journeys = [{"schemaVersion": "1.0.0", "id": "mx", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "matrix": {"roles": ["r1"], "targets": ["b"], "action": "create"}}]
+        self.write_pair(self._edge_requires_edge(self._fix_map()), journeys)
+        r = self.run_builder()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        files = {p.name for p in (self.dir / "pkg").glob("*")}
+        self.assertEqual(files, {"map.json", "journeys.json", "trace.json", "findings.json",
+                                 "coverage.json", "links.json", "source-reference.md",
+                                 "flowchart.mmd", "pseudocode.txt"}, files)
+        links = json.loads((self.dir / "pkg" / "links.json").read_text())
+        ids = {entry["mapNodeId"] for entry in links["links"]}
+        self.assertEqual(ids, {"a", "b"})
+
+    def test_m1_matrix_trace_conforms_to_trace_schema(self):
+        journeys = [{"schemaVersion": "1.0.0", "id": "mx", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "matrix": {"roles": ["r1"], "targets": ["b"]}}]
+        self.write_pair(self._fix_map(), journeys)
+        r = self.run_runner()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        from schema_lite import validate
+        trace = json.loads((self.dir / "trace.json").read_text())
+        self.assertEqual(validate(trace, json.loads((REPO / "spec" / "trace.schema.json").read_text())), [])
+
+    def test_m2_doctor_uses_effective_vocabulary(self):
+        m = self._fix_map(id="peek-map", roles=["r1"],
+                          capabilities=["view"],
+                          vocabulary={"view": "peek"},
+                          permissions=[{"subject": "role:r1", "relation": "peek", "object": "node:a"},
+                                       {"subject": "role:r1", "relation": "viewer", "object": "node:b"}])
+        m.pop("roleCapabilities")
+        journeys = [{"schemaVersion": "1.0.0", "id": "peek-j", "map": "peek-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "steps": [{"type": "act", "action": "view", "target": "a", "expect": "allowed"}]}]
+        self.write_pair(m, journeys)
+        r = self.run_tool(str(TOOLS / "map_doctor.py"), "--map", str(self.map_path), "--journeys", str(self.journeys_path))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("'view' is declared", r.stdout,
+                         "doctor must not false-flag capabilities through the default CRUD table")
+
+    def test_m3a_builder_survives_deep_nesting_with_clean_error(self):
+        m = self._fix_map(id="deep-map", roles=["r1"], entry={"default": ["a"]})
+        m["permissions"] = [{"subject": "role:r1", "relation": "viewer", "object": "node:a"},
+                            {"subject": "role:r1", "relation": "viewer", "object": "node:b"}]
+        node = m["nodes"][0]
+        inner = node["metadata"] = {}
+        for _ in range(2000):
+            inner["m"] = {}
+            inner = inner["m"]
+        journeys = [{"schemaVersion": "1.0.0", "id": "deep-j", "map": "deep-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "steps": [{"type": "move", "to": "b", "expect": "allowed"}]}]
+        # compact JSON only: indent=2 would hit the Python encoder's recursion
+        # limit inside the TEST, not in the tool under test
+        self.map_path.write_text(json.dumps(m))
+        self.journeys_path.write_text(json.dumps(journeys))
+        r = self.run_builder()
+        self.assertNotEqual(r.returncode, 0)
+        self.assert_no_traceback(r)
+
+    def test_m3b_diff_traces_survives_null_runid(self):
+        journeys = [{"schemaVersion": "1.0.0", "id": "ok-j", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "steps": [{"type": "act", "action": "create", "target": "b", "expect": "allowed"}]}]
+        self.write_pair(self._fix_map(), journeys)
+        r = self.run_runner()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        trace = json.loads((self.dir / "trace.json").read_text())
+        trace["runId"] = None
+        bad = self.dir / "bad.json"
+        bad.write_text(json.dumps(trace))
+        r2 = self.run_tool(str(TOOLS / "diff_traces.py"), str(self.dir / "trace.json"), str(bad))
+        self.assert_no_traceback(r2)
+
+    def test_l1_trailing_newline_id_rejected(self):
+        m = self._fix_map(id="evil-id\n")
+        journeys = [{"schemaVersion": "1.0.0", "id": "ok-j", "map": "evil-id\n",
+                     "initial": {"role": "r1", "node": "a"}, "steps": []}]
+        self.write_pair(m, journeys)
+        r = self.run_validator()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("does not match pattern", r.stdout)
+
+    def test_l2_vacuous_absence_claim_recorded_honestly(self):
+        journeys = [{"schemaVersion": "1.0.0", "id": "self-t", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "steps": [{"type": "assert_unreachable", "target": "a"}]}]
+        self.write_pair(self._fix_map(), journeys)
+        r = self.run_runner()
+        self.assertEqual(r.returncode, 0)
+        trace = json.loads((self.dir / "trace.json").read_text())
+        self.assertIn("vacuous claim", trace["journeys"][0]["events"][0]["detail"])
+        self.assertEqual(trace["journeys"][0]["findings"][0]["kind"], "assert_unreachable_vacuous")
+
+    def test_l3_empty_steps_warns(self):
+        journeys = [{"schemaVersion": "1.0.0", "id": "empty-j", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"}, "steps": []}]
+        self.write_pair(self._fix_map(), journeys)
+        r = self.run_validator()
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("zero steps", r.stdout)
+
+    def test_l4_matrix_expansion_entry_enforced(self):
+        m = self._fix_map()  # entry.roles.r2 unset -> r2 falls back to default [a]; make it strict
+        m["entry"] = {"default": ["a"], "roles": {"r2": ["b"]}}
+        journeys = [{"schemaVersion": "1.0.0", "id": "probe-base", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "matrix": {"roles": ["r2"], "targets": ["b"]}}]
+        self.write_pair(m, journeys)
+        r = self.run_validator()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("cannot legally enter", r.stdout)
+
+    def test_na4_unused_capability_grant_warns(self):
+        m = self._fix_map()  # no edge.requires consumes 'stamp'
+        journeys = [{"schemaVersion": "1.0.0", "id": "ok-j", "map": "fix-map",
+                     "initial": {"role": "r1", "node": "a"},
+                     "steps": [{"type": "act", "action": "create", "target": "b", "expect": "allowed"}]}]
+        self.write_pair(m, journeys)
+        r = self.run_tool(str(TOOLS / "map_doctor.py"), "--map", str(self.map_path), "--journeys", str(self.journeys_path))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("roleCapabilities grants 'stamp'", r.stdout)
 
 
 if __name__ == "__main__":

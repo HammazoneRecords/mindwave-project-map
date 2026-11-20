@@ -40,7 +40,7 @@
       "usedBy": [
         {
           "file": "tools/validate_project_map.py",
-          "line": 302
+          "line": 325
         }
       ],
       "mapNodes": [
@@ -66,7 +66,7 @@
       "usedBy": [
         {
           "file": "tools/run_journeys.py",
-          "line": 326
+          "line": 342
         },
         {
           "file": "tools/build_inspection_package.py",
@@ -96,7 +96,7 @@
       "usedBy": [
         {
           "file": "tools/build_inspection_package.py",
-          "line": 152
+          "line": 158
         }
       ],
       "mapNodes": [

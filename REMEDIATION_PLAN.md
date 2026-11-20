@@ -156,3 +156,25 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - 2026-11-20 — **Phase 6 landed**: `edge.requires` enforced against `roleCapabilities` (A12, with denial reasons in mismatch findings), entry nodes + per-role start sets enforced (A04), coverage metrics in trace + `coverage.json` (nodes/edges/permissions/per-role reachability), map-level `vocabulary` replaces the default CRUD vocabulary (invariant 5) proven by `examples/brewery.*` (brew/siphon/seal/taste). Suite: 38 tests green. A04/A12 suite cases flipped from interim warnings to enforcement assertions.
 - 2026-11-20 — **Phase 7 landed** (all five depth features in one sitting, one commit): `assert_unreachable` proofs of absence (7.1), `adapters/` contract + DeclarativeMapAdapter + Trace comparison with invariant-2 byte-pin (7.2), matrix journey expansion with collision-checked ids and observational probes (7.3), `tools/diff_traces.py` regression reports (7.4), conditional edges `when.state` with trace-resident state and dead-guard warnings (7.5). Suite: 48 tests green. Matrix re-synced; committed traces regenerated (toolVersion 1.2.0).
 - 2026-11-20 — **Phase 8 landed — REMEDIATION COMPLETE**: viewer consumes runner-derived links.json/findings.json with conformance tests (8.1), adjacent-approaches appendix in SELF_ASSESSMENT (8.2), full re-run 23/23 ideal outcomes + byte-deterministic packages + 52 tests green (8.3). README file list/status, FUTURE_UPDATES.md ledger, and HANDOFF.md refreshed. Next: independent re-assessment + founder review.
+
+## Post-remediation re-audit (2026-11-20)
+
+An independent agent re-audited HEAD `891c636` with fresh adversarial fixtures (no reuse of the committed tests). Its verdict: **23/23 audit cases reproduce as ideal, all five invariants hold, every README command runs verbatim, packages byte-deterministic, no hardcoded severity** — and it found 9 defects + 8 warts via 24 novel attacks, concentrated in surface the committed suite never exercised (matrix × builder × schema, custom vocabularies × doctor).
+
+Founder asked for the claims to be fact-checked, then a report. Every defect claim was reproduced independently and **all 9 were confirmed**; fixes landed the same day:
+
+| ID | Severity | Finding | Fix |
+|---|---|---|---|
+| H1 | High | Builder crashed with bare `KeyError: 'steps'` on valid matrix journeys and left a half-written package (links computed from raw journeys, trace knows expanded ids) | `build_links` now consumes the expanded concrete journeys; builder exits 0 with all 9 files. Pinned by `test_h1_builder_handles_matrix_journeys` |
+| M1 | Medium | Matrix traces violated `spec/trace.schema.json` (`expandedJourneys` undeclared; `events` items unconstrained) | Schema gains `expandedJourneys` + typed `events` items. Pinned |
+| M2 | Medium | `map_doctor` and `coverage.json` used the hardcoded CRUD table and ignored `edge.requires`/`when.state` — false warnings (NA14) and overstated reachability (NA5) | Doctor + coverage now use `effective_vocabulary` and runner-mirroring traversal semantics; unused `roleCapabilities` grants flagged (NA4). Pinned |
+| M3 | Medium | "Never crashes" held only for validator/runner: builder hit `RecursionError` traceback on 2000-deep metadata; `diff_traces.py` hit `TypeError` on `runId: null` | Builder catches `RecursionError` → clean `INVALID`; `diff_traces` validates inputs and wraps its report. Pinned |
+| L1 | Low | `schema_lite` pattern semantics: Python `$` matches before a trailing newline, so `id: "evil-id\n"` passed | Trailing `$` re-anchored to `\Z`. Pinned |
+| L2 | Low | `assert_unreachable` self-target passed with fabricated "confirmed unreachable" text | Vacuous claims recorded honestly as `assert_unreachable_vacuous` (spec_drift/low). Pinned |
+| L3 | Low | Empty `steps: []` journeys passed vacuously (inconsistent with A14) | Validator warns. Pinned |
+| L4 | Low | Matrix expansion bypassed entry-node enforcement (expanded roles never entry-checked) | Validator entry-checks every expanded role. Pinned |
+| L7 | Low | Docs: SELF_ASSESSMENT still said Phases 5–8 open; FUTURE_UPDATES had stale unchecked lines; README omitted `project_map_flow.py`; CI missed the brewery fixture and gated only mindwavemine findings | All fixed; CI now validates/runs/builds brewery and gates both packages |
+
+Accepted warts (documented, not fixed): duplicate JSON keys are stdlib last-wins; `set` on a step unlocks that same step's guarded edge (order documented); package `map.json` is a re-serialization — provenance hashes pin the ORIGINAL input bytes; mermaid node ids unescaped; the fuzz generator does not produce Phase 7 constructs (dedicated unit tests cover them); `hermes` appears only in REMEDIATION_PLAN.md's own text.
+
+Suite after fixes: **62 tests green** (52 + 10 re-audit regression pins). Matrix re-synced; traces regenerated.

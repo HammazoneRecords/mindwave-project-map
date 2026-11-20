@@ -80,7 +80,15 @@ def validate(instance: Any, schema: dict, root: dict | None = None, path: str = 
 
     if "pattern" in schema and isinstance(instance, str):
         try:
-            if re.search(schema["pattern"], instance) is None:
+            # JSON Schema patterns use ECMA-262 semantics, where `$` matches
+            # ONLY at the very end of the string. Python's `$` also matches
+            # just before a trailing newline, making patterns like
+            # `^[a-z0-9._-]*$` accept "evil-id\n" (re-audit finding L1).
+            # Re-anchor a trailing `$` to Python's true end-of-string `\Z`.
+            pattern = schema["pattern"]
+            if pattern.endswith("$") and not pattern.endswith("\\$") and not pattern.endswith(r"\Z"):
+                pattern = pattern[:-1] + r"\Z"
+            if re.search(pattern, instance) is None:
                 errors.append(f"{path}: {instance!r} does not match pattern {schema['pattern']!r}")
         except re.error as exc:
             errors.append(f"{path}: invalid pattern in schema ({exc})")

@@ -117,6 +117,12 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
                         coverage=coverage, expanded_from=expanded_from or None)
     findings = findings_from_trace(trace)
 
+    # links must be computed against the CONCRETE journeys (matrix journeys
+    # were expanded above — their ids are the ones the trace knows). The
+    # raw journeys file is still what gets packaged (re-audit finding H1).
+    from run_journeys import expand_journeys
+    concrete_journeys, _ = expand_journeys(journeys, project_map)
+
     variables_findings: list[dict] = []
     if variables_path is not None:
         variables = load(variables_path)
@@ -131,7 +137,7 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     write_trace(trace, output / "trace.json")
     write_json(output / "findings.json", findings)
     write_json(output / "coverage.json", trace.get("coverage"))
-    write_json(output / "links.json", build_links(project_map, journeys, trace))
+    write_json(output / "links.json", build_links(project_map, concrete_journeys, trace))
     atomic_write_text(output / "source-reference.md", source_reference(project_map, map_path, journeys_path))
     if variables_path is not None:
         write_json(output / "variables.json", variables)
@@ -150,7 +156,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         trace, findings, warnings = build_package(args.map, args.journeys, args.output, args.variables)
-    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError, RecursionError) as exc:
         print(f"INVALID: {exc}")
         return 2
     for w in warnings:

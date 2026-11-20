@@ -21,6 +21,7 @@ jobs:
           python3 tools/validate_project_map.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json
           python3 tools/validate_project_map.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json
           python3 tools/validate_project_map.py --map examples/workspace.map.json --journeys examples/member-create.journey.json
+          python3 tools/validate_project_map.py --map examples/brewery.map.json --journeys examples/brewery.journeys.json
 
       - name: map doctor on every fixture
         run: |
@@ -39,17 +40,19 @@ jobs:
           set -e
           python3 tools/build_inspection_package.py --map examples/mindwavemine.map.json --journeys examples/mindwavemine.journeys.json --output build/mindwavemine-inspection
           python3 tools/build_inspection_package.py --map examples/project-map-self.map.json --journeys examples/project-map-self.journeys.json --variables examples/project-map-self.variables.json --output build/self-inspection
+          python3 tools/build_inspection_package.py --map examples/brewery.map.json --journeys examples/brewery.journeys.json --output build/brewery-inspection
 
       - name: Full test suite (23-case audit suite + property fuzz + guards)
         run: python3 -m unittest discover -s tests -v
 
-      - name: Fail on new findings vs baseline
+      - name: Fail on new findings vs baseline (mindwavemine + brewery)
         run: |
           count=$(python3 -c "import json;print(len(json.load(open('build/mindwavemine-inspection/findings.json'))))")
+          brewery=$(python3 -c "import json;print(len(json.load(open('build/brewery-inspection/findings.json'))))")
           baseline=$(cat tests/baseline/findings-count.txt)
-          echo "findings=$count baseline=$baseline"
-          if [ "$count" -gt "$baseline" ]; then
-            echo "NEW FINDINGS above baseline ($count > $baseline)"; exit 1
+          echo "mindwavemine=$count brewery=$brewery baseline=$baseline"
+          if [ "$count" -gt "$baseline" ] || [ "$brewery" -gt "$baseline" ]; then
+            echo "NEW FINDINGS above baseline"; exit 1
           fi
 
       - uses: actions/upload-artifact@v4

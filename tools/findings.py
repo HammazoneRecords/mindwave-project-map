@@ -39,6 +39,8 @@ _RULES: dict[tuple, tuple] = {
     ("missing_edge", None, None): ("missing_edge", "low", "high"),
     # an explicit absence claim failed: the role CAN reach the node
     ("assert_unreachable_violated", None, None): ("unreachable", "high", "high"),
+    # a self-referential absence claim (journey stands on the target): proves nothing
+    ("assert_unreachable_vacuous", None, None): ("spec_drift", "low", "high"),
     # adapter observation disagrees with the Map's declared expectation
     ("adapter_disagreement", None, None): ("spec_drift", "medium", "medium"),
 }

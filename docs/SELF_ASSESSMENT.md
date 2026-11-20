@@ -14,7 +14,7 @@ The independent audit's Phases 0–4 have landed and are regression-tested. What
 - **flowchart.mmd / pseudocode.txt derive from the supplied Map**; the pipeline description lives separately in `project_map_flow.py`.
 - **The Variable Matrix is verified**: every definedIn/usedBy reference, mapNode, and journeyStep is checked; stale references become spec_drift findings. The committed matrix was regenerated to match the current source.
 
-Still open (tracked in REMEDIATION_PLAN.md): the full adversarial test suite + CI (Phase 5), entry nodes / edge.requires enforcement / coverage metrics / parameterized vocabulary (Phase 6), depth features (Phase 7), viewer conformance (Phase 8).
+Still open (re-assessed 2026-11-20 after the independent re-audit): the re-audit confirmed 23/23 adversarial outcomes and all five invariants, and its confirmed findings (builder × matrix journeys, trace-schema coverage of `expandedJourneys`, doctor/coverage vocabulary + traversal semantics, deep-nesting crash guards, vacuous absence claims, entry checks for expanded roles) were fixed in the same pass. Known accepted limitations: the property fuzz does not generate Phase 7 constructs (matrix/entry/vocabulary/adapters) — they are covered by dedicated unit tests instead; duplicate JSON keys are silently last-wins (stdlib behavior, documented wart); standalone viewer mode without a package falls back to heuristic highlighting. Everything else is tracked in REMEDIATION_PLAN.md's progress log.
 
 ## Assessment input
 
