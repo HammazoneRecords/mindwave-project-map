@@ -132,11 +132,26 @@ class ValidatorCases(AuditCaseBase):
         errors, _ = self.validate_pair(base_map(), base_journey(steps=[{"type": "act", "action": "create", "target": "ghost-node", "expect": "denied"}]))
         self.assertTrue(any("ghost-node" in e for e in errors), errors)
 
-    def test_a04_entry_nodes_interim_warning(self):
-        # INTERIM (Phase 6 will enforce): an undeclared entry surface warns.
+    def test_a04_entry_nodes_enforced(self):
+        # Phase 6.2: with entry declared, a journey may only start where its
+        # role is allowed to enter; without entry the validator still warns.
         errors, warnings = self.validate_pair(base_map(), base_journey())
         self.assertEqual(errors, [])
         self.assertTrue(any("entry" in w for w in warnings), warnings)
+
+        enforced_map = base_map(entry={"default": ["home"]})
+        errors, _ = self.validate_pair(enforced_map, base_journey())
+        self.assertEqual(errors, [], "legal start must pass")
+
+        errors, _ = self.validate_pair(enforced_map, base_journey(initial={"role": "member", "node": "workspace"}))
+        self.assertTrue(any("not a legal entry" in e for e in errors), errors)
+
+        # role-specific entry lists override the default
+        errors, _ = self.validate_pair(
+            base_map(entry={"default": ["home"], "roles": {"member": ["workspace"]}}),
+            base_journey(initial={"role": "member", "node": "workspace"}),
+        )
+        self.assertEqual(errors, [])
 
     def test_a05_unknown_journey_role_caught(self):
         errors, _ = self.validate_pair(base_map(), base_journey(initial={"role": "ghost", "node": "home"}))
@@ -179,14 +194,35 @@ class ValidatorCases(AuditCaseBase):
         )
         self.assertTrue(any("role:" in e for e in errors), errors)
 
-    def test_a12_edge_requires_interim_warning(self):
-        # INTERIM (Phase 6 will enforce): requires is warned about, not enforced.
-        errors, warnings = self.validate_pair(
-            base_map(edges=[{"from": "home", "to": "workspace", "type": "navigation", "requires": ["create"]}]),
-            base_journey(),
+    def test_a12_edge_requires_enforced(self):
+        # Phase 6.1: requires is real. The roleCapabilities mapping grants
+        # capabilities per role; the runner denies a move when the role lacks one.
+        map_data = base_map(
+            edges=[{"from": "home", "to": "workspace", "type": "navigation", "requires": ["create"]}],
+            roleCapabilities={"member": ["view"]},  # member canNOT create
         )
+        errors, _ = self.validate_pair(map_data, base_journey())
         self.assertEqual(errors, [])
-        self.assertTrue(any("edge.requires" in w for w in warnings), warnings)
+
+        r = self.run_runner()
+        self.assertEqual(r.returncode, 1, f"journey must fail: {r.stdout}{r.stderr}")
+        trace = json.loads((self.dir / "trace.json").read_text())
+        raw = trace["journeys"][0]["findings"][0]
+        self.assertEqual(raw["kind"], "journey_expectation_mismatch")
+        self.assertEqual(raw["actual"], "denied")
+        self.assertIn("missing capability", raw.get("reason", ""), raw)
+
+        # grant the capability and the same journey passes
+        map_data["roleCapabilities"] = {"member": ["view", "create"]}
+        errors, _ = self.validate_pair(map_data, base_journey())
+        self.assertEqual(errors, [])
+        r = self.run_runner()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+        # an edge requiring an undeclared capability is rejected outright
+        broken = base_map(edges=[{"from": "home", "to": "workspace", "type": "navigation", "requires": ["ghost_cap"]}])
+        errors, _ = self.validate_pair(broken, base_journey())
+        self.assertTrue(any("ghost_cap" in e for e in errors), errors)
 
     def test_a13_duplicate_edges_caught(self):
         errors, _ = self.validate_pair(
@@ -391,6 +427,70 @@ class BuilderCases(AuditCaseBase):
         self.assertIn("audit-case-map", pseudo)
         self.assertIn("member:", pseudo)
         self.assertIn("creator(workspace)", pseudo)
+
+
+class Phase6Cases(AuditCaseBase):
+    """Phase 6 acceptance: A12 denied; non-CRUD fixture runs; coverage answers
+    "what was untested"."""
+
+    BREWERY_MAP = EXAMPLES / "brewery.map.json"
+    BREWERY_J = EXAMPLES / "brewery.journeys.json"
+
+    def setUp(self):
+        super().setUp()
+        self.write_pair(base_map(), base_journey())
+
+    def test_brewery_non_crud_vocabulary_runs(self):
+        # invariant 5: an invented brew/siphon/seal vocabulary works end to end
+        r = subprocess.run(
+            [sys.executable, str(TOOLS / "run_journeys.py"),
+             "--map", str(self.BREWERY_MAP), "--journeys", str(self.BREWERY_J),
+             "--trace", str(self.dir / "brewery-trace.json")],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assert_no_traceback(r)
+        trace = json.loads((self.dir / "brewery-trace.json").read_text())
+        self.assertTrue(all(j["passed"] for j in trace["journeys"]),
+                        [j["findings"] for j in trace["journeys"] if not j["passed"]])
+        # the capability-gated walk denied for the right reason (A12 in a real fixture)
+        gated = next(j for j in trace["journeys"] if j["journeyId"] == "brewer-cannot-enter-cellar")
+        self.assertTrue(gated["passed"])
+
+    def test_brewery_visitor_denials_meaningful(self):
+        r = subprocess.run(
+            [sys.executable, str(TOOLS / "run_journeys.py"),
+             "--map", str(self.BREWERY_MAP), "--journeys", str(self.BREWERY_J),
+             "--trace", str(self.dir / "t.json")],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(r.returncode, 0)
+        trace = json.loads((self.dir / "t.json").read_text())
+        visitor = next(j for j in trace["journeys"] if j["journeyId"] == "visitor-stays-out")
+        denials = [e for e in visitor["events"] if e["detail"].endswith(": denied")]
+        self.assertEqual(len(denials), 2, visitor)
+
+    def test_coverage_answers_what_was_untested(self):
+        r = self.run_builder()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        cov = json.loads((self.dir / "pkg" / "coverage.json").read_text())
+        self.assertEqual(cov["nodes"]["total"], 2)
+        self.assertIn("workspace", cov["nodes"]["touched"])
+        self.assertIn("home", cov["nodes"]["untouched"])  # start node, never a step target
+        self.assertEqual(cov["edges"]["used"], [["home", "workspace"]])
+        self.assertEqual(cov["permissions"]["declared"], 3)
+        # the exercised viewer grant on workspace is spelled out
+        self.assertIn("role:member|viewer|node:workspace", cov["permissions"]["exercised"])
+        # roles section reports reachability per role
+        self.assertIn("member", cov["roles"])
+        self.assertIn("visitor", cov["roles"])
+
+    def test_coverage_in_trace_conforms(self):
+        r = self.run_builder()
+        self.assertEqual(r.returncode, 0)
+        trace = json.loads((self.dir / "pkg" / "trace.json").read_text())
+        self.assertIn("coverage", trace)
+        self.assertIn("untouched", trace["coverage"]["nodes"])
 
 
 if __name__ == "__main__":

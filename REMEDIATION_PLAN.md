@@ -109,12 +109,12 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 
 ### Phase 6 — Quick wins (S each) — audit §5.1 / §5.4
 
-- [ ] 6.1 Enforce `edge.requires` against role capabilities via a `roleCapabilities` mapping (A01, A12) — makes `capabilities` real.
-- [ ] 6.2 Entry nodes and per-role start sets; a journey's `initial` node must be a legal entry for its role (A04 gets defined semantics).
-- [ ] 6.3 Coverage metrics per run: node/edge/permission coverage per role, reachability per role, permission surface — new `coverage.json` in the trace and package ("what did the Journeys not test").
-- [ ] 6.4 Parameterized capabilities: the action→relation vocabulary moves into the Map; the runner reads it from there (invariant 5); a fixture with an invented non-CRUD vocabulary proves it.
+- [x] 6.1 Enforce `edge.requires` against role capabilities via a `roleCapabilities` mapping (A01, A12) — makes `capabilities` real.
+- [x] 6.2 Entry nodes and per-role start sets; a journey's `initial` node must be a legal entry for its role (A04 gets defined semantics).
+- [x] 6.3 Coverage metrics per run: node/edge/permission coverage per role, reachability per role, permission surface — new `coverage.json` in the trace and package ("what did the Journeys not test").
+- [x] 6.4 Parameterized capabilities: the action→relation vocabulary moves into the Map; the runner reads it from there (invariant 5); a fixture with an invented non-CRUD vocabulary proves it.
 
-**Accept:** A12 denied; non-CRUD fixture runs; coverage answers "what was untested".
+**Accept (met 2026-11-20):** A12 denied (unit test + the brewery fixture's capability-gated walk); the non-CRUD brewery fixture (`examples/brewery.map.json`: brew/siphon/seal/taste → brewer/siphoner/sealer/taster) runs clean with no CRUD vocabulary anywhere; coverage reports untouched nodes, unused edges, unexercised permissions, and per-role reachability. Design note: `missing_edge` is advisory (severity low, category missing_edge) — it records structural gaps without failing the journey; only expectation mismatches and violated absence claims are fatal. The Variable Matrix was re-synced to the shifted line numbers (the Phase 4 verifier caught the drift itself).
 
 ### Phase 7 — Depth features (M each) — audit §5.1 / §5.2 / §5.4
 
@@ -151,3 +151,4 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - 2026-11-20 — **Phase 4 landed**: exact `links.json` from structured trace nodes (D5), Map-derived `flowchart.mmd`/`pseudocode.txt` via `tools/map_derived.py` (D6), Variable Matrix verified reference-by-reference via `tools/verify_variables.py` and regenerated to current truth (D9), README + SELF_ASSESSMENT updated to post-remediation reality (D10). Deploy key for this repo registered (`mindwave-map-sandbox`) and stored in `skills/mindwave-deploy`; pushes unblocked.
 - 2026-11-20 — **Phase 5 landed**: 23-case adversarial suite (`tests/test_audit_cases.py`, A01–A23; A04/A12 assert the interim warning behavior until Phase 6), seeded property test (`tests/test_property.py`, 300 seeds, clean/chaos generator modes), `tools/map_doctor.py` (orphans, unreachable-per-role, unused capabilities, untraversable edges, duplicate edges/nodes, dangling matrix refs, no-entry warning), `.github/workflows/validate.yml` (fixtures + doctor + runs + packages + suite + findings-vs-baseline gate + artifacts), baseline `tests/baseline/findings-count.txt` = 0. Suite: 34 tests green locally.
 - 2026-11-20 — Phase 4 fix-up found by the new suite: `journeySteps` now also links checkpoint steps to the node where the trace resolved them (event index == step index), and the validator's interim no-entry warning is real.
+- 2026-11-20 — **Phase 6 landed**: `edge.requires` enforced against `roleCapabilities` (A12, with denial reasons in mismatch findings), entry nodes + per-role start sets enforced (A04), coverage metrics in trace + `coverage.json` (nodes/edges/permissions/per-role reachability), map-level `vocabulary` replaces the default CRUD vocabulary (invariant 5) proven by `examples/brewery.*` (brew/siphon/seal/taste). Suite: 38 tests green. A04/A12 suite cases flipped from interim warnings to enforcement assertions.

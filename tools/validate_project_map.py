@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from schema_lite import validate as schema_validate  # noqa: E402
-from vocabulary import ACTION_TO_RELATION, CAPABILITY_RELATIONS  # noqa: E402
+from vocabulary import effective_vocabulary  # noqa: E402
 
 SPEC_DIR = Path(__file__).resolve().parent.parent / "spec"
 
@@ -64,6 +64,9 @@ def validate_map(data, path):
             errors.append(f"{p}: duplicate node id '{n['id']}'")
         node_ids[n["id"]] = p
 
+    roles = set(data["roles"])
+    capabilities = set(data.get("capabilities") or [])
+
     seen_pairs: dict = {}
     for i, e in enumerate(data["edges"]):
         p = f"{path}:edges[{i}]"
@@ -79,13 +82,51 @@ def validate_map(data, path):
             )
         else:
             seen_pairs[pair] = p
-        if e.get("requires"):
-            warnings.append(
-                f"{p}: edge requires {e['requires']} but 'edge.requires' is not enforced yet "
-                "(REMEDIATION_PLAN.md Phase 6.1); the runner will allow this move regardless"
-            )
+        for cap in e.get("requires", []):
+            if cap not in capabilities:
+                errors.append(
+                    f"{p}: edge requires capability '{cap}' which the Map does not declare; "
+                    "no role could ever be granted it"
+                )
 
-    roles = set(data["roles"])
+    role_caps = data.get("roleCapabilities") or {}
+    for role, caps in role_caps.items():
+        if role not in roles:
+            errors.append(f"{path}:roleCapabilities: unknown role '{role}'")
+        if not isinstance(caps, list):
+            errors.append(f"{path}:roleCapabilities.{role}: expected a list of capability names")
+            continue
+        for cap in caps:
+            if cap not in capabilities:
+                errors.append(
+                    f"{path}:roleCapabilities.{role}: grants capability '{cap}' which the Map "
+                    "does not declare"
+                )
+    if "requires" in json.dumps(data.get("edges", [])) and not role_caps:
+        warnings.append(
+            f"{path}: edges declare 'requires' but no roleCapabilities mapping exists; "
+            "as declared, no role can traverse those edges"
+        )
+
+    entry = data.get("entry")
+    if entry is not None:
+        default_nodes = entry.get("default", [])
+        role_entries = entry.get("roles", {})
+        for nid in default_nodes:
+            if nid not in node_ids:
+                errors.append(f"{path}:entry.default: unknown node '{nid}'")
+        for role, nodes in role_entries.items():
+            if role not in roles:
+                errors.append(f"{path}:entry.roles: unknown role '{role}'")
+            for nid in nodes or []:
+                if nid not in node_ids:
+                    errors.append(f"{path}:entry.roles.{role}: unknown node '{nid}'")
+    else:
+        warnings.append(
+            f"{path}: no entry nodes declared; journey start positions are unchecked "
+            "(declare 'entry' to enforce start semantics)"
+        )
+
     used_relations: set = set()
     for i, pmt in enumerate(data["permissions"]):
         p = f"{path}:permissions[{i}]"
@@ -110,20 +151,17 @@ def validate_map(data, path):
             errors.append(f"{p}: unknown object node '{node}'")
         used_relations.add(pmt["relation"])
 
-    capabilities = data.get("capabilities") or []
-    for cap in capabilities:
-        relations = CAPABILITY_RELATIONS.get(cap, set())
-        if relations and not (relations & used_relations):
+    # unused-capability warning maps capability names through the Map's
+    # effective vocabulary (Phase 6.4): capability 'brew' grants relation
+    # 'brewer' when vocabulary says brew->brewer; 'view' grants 'viewer' by default
+    vocab = effective_vocabulary(data)
+    for cap_name in sorted(capabilities):
+        relation = vocab.get(cap_name)
+        if relation and relation not in used_relations:
             warnings.append(
-                f"{path}: capability '{cap}' is declared but no permission uses any of its "
-                f"relations ({sorted(relations)}); it is dead weight unless something grants it"
+                f"{path}: capability '{cap_name}' is declared but no permission uses its "
+                f"relation '{relation}'; it is dead weight unless something grants it"
             )
-
-    if "entry" not in data:
-        warnings.append(
-            f"{path}: no entry nodes declared; journey start positions are unchecked "
-            "(interim — REMEDIATION_PLAN.md Phase 6 enforces entry semantics)"
-        )
 
     return errors, warnings
 
@@ -143,7 +181,12 @@ def validate_journeys(data, map_data, path):
     node_ids = {n["id"] for n in map_data["nodes"]}
     roles = {r for r in map_data["roles"]}
     seen_journey_ids: dict = {}
-    action_vocab = set(ACTION_TO_RELATION)
+    action_vocab = set(effective_vocabulary(map_data))  # the Map's own vocabulary wins (Phase 6.4)
+
+    entry = map_data.get("entry")
+    if entry is not None:
+        default_nodes = set(entry.get("default", []))
+        role_entries = entry.get("roles", {})
 
     for i, j in enumerate(data):
         p = f"{path}[{i}]"
@@ -165,6 +208,15 @@ def validate_journeys(data, map_data, path):
                 f"{p}.initial: unknown role '{j['initial']['role']}' — the runner would execute "
                 "the whole journey as a role that exists nowhere in the Map's permissions"
             )
+        elif entry is not None:
+            # A04, enforced (Phase 6.2): a journey may only start where its
+            # role is allowed to enter (role-specific list, else the default)
+            allowed_starts = set(role_entries.get(j["initial"]["role"], default_nodes))
+            if j["initial"]["node"] not in allowed_starts:
+                errors.append(
+                    f"{p}.initial: node '{j['initial']['node']}' is not a legal entry for role "
+                    f"'{j['initial']['role']}' (entry allows: {sorted(allowed_starts) or '(none)'})"
+                )
 
         for k, s in enumerate(j["steps"]):
             sp = f"{p}.steps[{k}]"

@@ -32,6 +32,7 @@
   ],
   "roles":["architect","contributor","auditor"],
   "capabilities":["view","inspect","validate","run","export","change"],
+  "entry":{"default":["readme"],"roles":{"architect":["readme","package_builder"],"auditor":["schemas"]}},
   "permissions":[
     {"subject":"role:architect","relation":"viewer","object":"node:readme"},
     {"subject":"role:architect","relation":"viewer","object":"node:formalization"},

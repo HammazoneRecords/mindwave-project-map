@@ -1,0 +1,53 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "id": "brewer-brews",
+    "title": "Brewer brews and tastes on the mash floor",
+    "map": "brewery-floor",
+    "initial": {"role": "brewer", "node": "gate"},
+    "steps": [
+      {"type": "move", "to": "mash_room", "expect": "allowed"},
+      {"type": "act", "action": "brew", "target": "tap", "expect": "allowed"},
+      {"type": "act", "action": "taste", "target": "tap", "expect": "allowed"},
+      {"type": "checkpoint", "label": "mash-floor-round-complete"}
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "cellarman-siphons",
+    "title": "Cellarman siphons a cask and seals a crate",
+    "map": "brewery-floor",
+    "initial": {"role": "cellarman", "node": "gate"},
+    "steps": [
+      {"type": "move", "to": "cellar", "expect": "allowed"},
+      {"type": "act", "action": "siphon", "target": "cask", "expect": "allowed"},
+      {"type": "move", "to": "gate", "expect": "denied"},
+      {"type": "comment", "label": "the cellar has no declared edge back to the gate: one-way floor plan, so the denial is structural"},
+      {"type": "move", "to": "bottling", "expect": "denied"},
+      {"type": "act", "action": "seal", "target": "crate", "expect": "allowed"}
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "visitor-stays-out",
+    "title": "Visitor cannot enter or act anywhere",
+    "map": "brewery-floor",
+    "initial": {"role": "visitor", "node": "gate"},
+    "steps": [
+      {"type": "move", "to": "mash_room", "expect": "denied"},
+      {"type": "act", "action": "brew", "target": "tap", "expect": "denied"},
+      {"type": "checkpoint", "label": "visitor-gate-held"}
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "id": "brewer-cannot-enter-cellar",
+    "title": "Brewer lacks the siphon capability the cellar walk requires",
+    "map": "brewery-floor",
+    "initial": {"role": "brewer", "node": "gate"},
+    "steps": [
+      {"type": "move", "to": "cellar", "expect": "denied"},
+      {"type": "checkpoint", "label": "capability-gate-held"}
+    ]
+  }
+]

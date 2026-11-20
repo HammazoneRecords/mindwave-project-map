@@ -13,6 +13,25 @@
     "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
     "roles": { "type": "array", "items": { "type": "string" } },
     "capabilities": { "type": "array", "items": { "type": "string" } },
+    "roleCapabilities": {
+      "type": "object",
+      "description": "role -> capabilities it holds; enforced against edge.requires by the runner (Phase 6.1).",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "entry": {
+      "type": "object",
+      "description": "Legal start positions (Phase 6.2): role-specific lists override the default.",
+      "properties": {
+        "default": { "type": "array", "items": { "type": "string" } },
+        "roles": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }
+      },
+      "additionalProperties": false
+    },
+    "vocabulary": {
+      "type": "object",
+      "description": "Optional map-specific action -> relation vocabulary (Phase 6.4, invariant 5). Replaces the default CRUD vocabulary entirely when present.",
+      "additionalProperties": { "type": "string" }
+    },
     "permissions": { "type": "array", "items": { "$ref": "#/$defs/permission" } },
     "constraints": { "type": "array", "items": { "type": "string" } },
     "source": {

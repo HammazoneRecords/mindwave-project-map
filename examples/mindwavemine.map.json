@@ -36,6 +36,7 @@
   ],
   "roles": ["operator", "reviewer"],
   "capabilities": ["view", "read", "create", "ingest", "handoff"],
+  "entry": {"default": ["dashboard"]},
   "permissions": [
     {"subject":"role:operator","relation":"viewer","object":"node:dashboard"},
     {"subject":"role:operator","relation":"viewer","object":"node:concept_creator"},

@@ -13,6 +13,7 @@
   ],
   "roles": ["visitor", "member", "admin"],
   "capabilities": ["view", "create", "edit"],
+  "entry": {"default": ["home"]},
   "permissions": [
     { "subject": "role:visitor", "relation": "viewer", "object": "node:home" },
     { "subject": "role:member", "relation": "viewer", "object": "node:workspace" },

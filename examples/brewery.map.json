@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "brewery-floor",
+  "title": "Brewery Production Floor (invented vocabulary)",
+  "version": "1.0.0",
+  "vocabulary": {
+    "brew": "brewer",
+    "siphon": "siphoner",
+    "seal": "sealer",
+    "taste": "taster"
+  },
+  "nodes": [
+    {"id": "gate", "type": "screen", "title": "Gate"},
+    {"id": "mash_room", "type": "view", "title": "Mash Room"},
+    {"id": "cellar", "type": "view", "title": "Cellar"},
+    {"id": "bottling", "type": "view", "title": "Bottling Line"},
+    {"id": "tap", "type": "capability", "title": "Brew Kettle"},
+    {"id": "cask", "type": "capability", "title": "Cask"},
+    {"id": "crate", "type": "capability", "title": "Crate"}
+  ],
+  "edges": [
+    {"from": "gate", "to": "mash_room", "type": "walk"},
+    {"from": "gate", "to": "cellar", "type": "walk", "requires": ["siphon"]},
+    {"from": "mash_room", "to": "bottling", "type": "walk"},
+    {"from": "mash_room", "to": "tap", "type": "invokes"},
+    {"from": "cellar", "to": "cask", "type": "invokes"},
+    {"from": "bottling", "to": "crate", "type": "invokes"}
+  ],
+  "roles": ["brewer", "cellarman", "visitor"],
+  "capabilities": ["brew", "siphon", "seal", "taste"],
+  "roleCapabilities": {
+    "brewer": ["brew", "taste"],
+    "cellarman": ["siphon", "seal", "taste"]
+  },
+  "permissions": [
+    {"subject": "role:brewer", "relation": "brewer", "object": "node:tap"},
+    {"subject": "role:brewer", "relation": "taster", "object": "node:tap"},
+    {"subject": "role:brewer", "relation": "viewer", "object": "node:gate"},
+    {"subject": "role:brewer", "relation": "viewer", "object": "node:mash_room"},
+    {"subject": "role:brewer", "relation": "viewer", "object": "node:bottling"},
+    {"subject": "role:cellarman", "relation": "viewer", "object": "node:gate"},
+    {"subject": "role:cellarman", "relation": "viewer", "object": "node:cellar"},
+    {"subject": "role:cellarman", "relation": "siphoner", "object": "node:cask"},
+    {"subject": "role:cellarman", "relation": "sealer", "object": "node:crate"},
+    {"subject": "role:visitor", "relation": "viewer", "object": "node:gate"}
+  ],
+  "entry": {"default": ["gate"]},
+  "constraints": [
+    "Only the cellarman may enter the cellar (the gate->cellar walk requires the siphon capability).",
+    "Visitors see the gate and nothing else."
+  ]
+}

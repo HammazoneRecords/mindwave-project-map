@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fsutils import atomic_write_text, guard_output_against_inputs  # noqa: E402
 from map_derived import mermaid_from_map, pseudocode_from_map  # noqa: E402
 from verify_variables import verify_variables  # noqa: E402
-from run_journeys import build_trace, index_map, run_journey, write_trace  # noqa: E402
+from run_journeys import build_trace, execute, write_trace  # noqa: E402
 from validate_project_map import load, validate_all  # noqa: E402
 
 
@@ -112,9 +112,8 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     if errors:
         raise ValueError("\n".join(f"ERROR: {e}" for e in errors))
 
-    nodes, edges, permissions = index_map(project_map)
-    results = [run_journey(journey, nodes, edges, permissions) for journey in journeys]
-    trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path)
+    results, coverage = execute(project_map, journeys)
+    trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path, coverage=coverage)
     findings = findings_from_trace(trace)
 
     variables_findings: list[dict] = []
@@ -130,6 +129,7 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     write_json(output / "journeys.json", journeys)
     write_trace(trace, output / "trace.json")
     write_json(output / "findings.json", findings)
+    write_json(output / "coverage.json", trace.get("coverage"))
     write_json(output / "links.json", build_links(project_map, journeys, trace))
     atomic_write_text(output / "source-reference.md", source_reference(project_map, map_path, journeys_path))
     if variables_path is not None:
