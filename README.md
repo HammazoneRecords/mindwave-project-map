@@ -40,21 +40,30 @@ The first release establishes the vocabulary, schema direction, example Map, and
 
 **Requirements:** Python >= 3.9 (the tools use `str.removeprefix`). No third-party runtime dependencies — the tools run on the standard library alone.
 
-An independent audit (2026-11-17) found the tools enforce less than this README claims. Remediation is tracked and landing in [REMEDIATION_PLAN.md](./REMEDIATION_PLAN.md): Phases 0–4 are complete (hygiene, unified validation, overwrite guard, trace provenance, truthful packages) and are covered by regression tests. Phases 5–8 (full adversarial test suite, CI, entry nodes, coverage, depth features, viewer conformance) are in progress — check the plan's progress log for what is verified today.
+An independent audit (2026-11-17) found the tools enforce less than this README claims. The full remediation plan has since landed (phases 0–8 of [REMEDIATION_PLAN.md](./REMEDIATION_PLAN.md)): schema + semantic validation gates execution, outputs can never clobber inputs, every Trace and Finding carries content-hash provenance, `edge.requires` and entry nodes are enforced, packages are truthful (exact links, Map-derived diagrams, verified Variable Matrix), and the audit's 23 adversarial cases are committed tests — plus a 300-seed property fuzz, a GitHub Actions CI, and depth features (proofs of absence, adapter contract, matrix Journeys, differential traces, conditional edges).
 
 ## Project shape
 
 ```text
 tools/
-  validate_project_map.py     # schema + semantic validation, precise errors
-  run_journeys.py             # executes Journeys against a Map, writes a Trace
+  validate_project_map.py     # schema + semantic validation, collect-all-errors, never crashes
+  run_journeys.py             # executes Journeys against a Map, writes a provenance-stamped Trace
   build_inspection_package.py # validate + run + export one portable package
-  project_map_flow.py         # exports the Project Map pipeline's own flowchart/pseudocode
+  map_doctor.py               # structural health checks (orphans, reachability, dead capabilities)
+  diff_traces.py              # differential trace report between Map revisions
+  map_derived.py              # flowchart/pseudocode generated FROM the supplied Map
+  verify_variables.py         # Variable Matrix reference verification
+  findings.py                 # rule-based Finding taxonomy (category/severity/confidence)
+  fsutils.py                  # overwrite guard + atomic writes
+  schema_lite.py              # vendored dependency-free JSON Schema subset validator
+  vocabulary.py               # default action->relation vocabulary; Map-level override
+adapters/
+  base.py                     # adapter contract (probe/act) + DeclarativeMapAdapter
 spec/
   map.schema.json             # declarative Map format
-  journey.schema.json         # executable Journey format
-  trace.schema.json           # Trace format
-  finding.schema.json         # Finding format
+  journey.schema.json         # executable Journey format (matrix, assert_unreachable, set)
+  trace.schema.json           # Trace format with provenance + coverage
+  finding.schema.json         # Finding format with taxonomy
   variable.schema.json        # Variable Matrix format
 examples/
   workspace.map.json                  # small generic project map
@@ -66,13 +75,16 @@ examples/
   project-map-self.journeys.json
   project-map-self.trace.json
   project-map-self.variables.json
+  brewery.map.json                    # non-CRUD vocabulary fixture (invariant 5)
+  brewery.journeys.json
 viewer/
-  index.html                  # static inspection viewer for built packages
+  index.html                  # static inspection viewer (reads links.json/findings.json in package mode)
 formalization/
   PROJECT_MAP.md              # architecture and invariants
   TERMINOLOGY.md              # stable language
 docs/                         # self-assessment, flow docs, skin inventory
-tests/                        # baseline reproduction + regression tests
+tests/                        # audit acceptance suite + property fuzz + guards + viewer conformance
+.github/workflows/validate.yml  # CI: fixtures + doctor + runs + packages + tests + findings gate
 LICENSE
 README.md
 ```
@@ -125,7 +137,7 @@ python3 tools/run_journeys.py \
   --trace examples/mindwavemine.trace.json
 ```
 
-The runner proves the declarative layer: allowed and denied movement, role permissions, checkpoints, and portable Trace output. Every Trace carries provenance — a runId, UTC timestamp, tool version, and the SHA-256 of the exact Map and Journey documents that were executed — so a Finding can always name the Map revision that produced it. It does not yet enforce declared `edge.requires` or entry nodes (tracked in the remediation plan, Phase 6), and it does not pretend to be a live browser/API adapter. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
+The runner proves the declarative layer: allowed and denied movement, role permissions (including `edge.requires` capability gates and conditional state guards), checkpoints, absence proofs (`assert_unreachable`), matrix permission probes, and portable Trace output with provenance and coverage. Adapter observations (declarative by default) are compared against the Map and recorded alongside it. It does not pretend to be a live browser/API adapter — the adapter contract (`adapters/base.py`) is where a live integration plugs in without changing the runner.
 
 ## Build a portable inspection package
 
@@ -138,7 +150,7 @@ python3 tools/build_inspection_package.py \
   --output build/mindwavemine-inspection
 ```
 
-The output directory contains `map.json`, `journeys.json`, `trace.json` (with run provenance), `findings.json` (rule-based taxonomy: category, severity, confidence — no hardcoded severities), `links.json` (exact node → journey-step → trace-event links derived from structured trace data, not substring matching), optional `variables.json` (verified reference-by-reference when supplied; stale lines become findings), `source-reference.md`, and a `flowchart.mmd` + `pseudocode.txt` derived from the supplied Map itself. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
+The output directory contains `map.json`, `journeys.json`, `trace.json` (with run provenance and coverage), `findings.json` (rule-based taxonomy: category, severity, confidence — no hardcoded severities), `links.json` (exact node → journey-step → trace-event links derived from structured trace data, not substring matching), `coverage.json` (what the Journeys did and did not test), optional `variables.json` (verified reference-by-reference when supplied; stale lines become findings), `source-reference.md`, and a `flowchart.mmd` + `pseudocode.txt` derived from the supplied Map itself. Drop `viewer/index.html` into the package directory to browse it with the runner-derived relationships highlighted. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
 
 ## Self-assessment
 

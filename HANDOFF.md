@@ -1,9 +1,9 @@
 # MindWave Project Map — Handoff
 
-**Status:** PAUSED — safe to resume
+**Status:** REMEDIATION COMPLETE (audit phases 0-8 landed; depth features live)
 **Repository:** https://github.com/HammazoneRecords/mindwave-project-map
 **Branch:** `main`
-**Verified remote commit:** `c96ba96bca1aa230d24030f034ae7c849a5be265`
+**Verified remote commit:** see REMEDIATION_PLAN.md progress log (post-audit full remediation, 2026-11-20)
 
 ## What is complete
 
@@ -29,16 +29,15 @@ The public repository contains a domain-neutral Project Map foundation with:
 - self-assessment documentation;
 - public leak checks against private project terms and material.
 
-## Last verified results
+## Last verified results (2026-11-20, post-remediation)
 
 ```text
-self Map validation: PASS
-self Journeys: 3/3 passed
-self Findings: 0
-viewer JavaScript syntax: PASS
-Python tool syntax: PASS
-inspection package generation: PASS
-public leak scan: PASS
+audit adversarial suite A01-A23: 23/23 ideal outcomes
+property fuzz (300 seeds): validator accepts -> runner never crashes: PASS
+viewer conformance (links.json/findings.json): PASS
+overwrite guard tests: PASS
+all fixtures validate; journeys pass; packages build deterministically
+suite total: 52 tests green
 ```
 
 ## Current inspection chain
@@ -61,15 +60,14 @@ These remain deliberately unchecked:
 - Findings attached interactively to source and variables;
 - live room/product viewport;
 - generated Variable Matrix from source scanning;
-- live MindWaveMine browser/API adapter;
+- live MindWaveMine browser/API adapter (the declarative adapter contract exists; a live subclass is the next step);
 - change proposal format;
-- state A/state B comparison;
 - 3D maze skin;
 - Ghost mode;
 - Pac-Man time travel;
 - Puppeteer mode;
 - launch landing page implementation;
-- CI and tagged release.
+- tagged release (CI is live: .github/workflows/validate.yml).
 
 ## Resume point
 

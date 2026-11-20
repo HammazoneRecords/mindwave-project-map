@@ -18,8 +18,14 @@ async function load(){
  const files=[`${prefix}.map.json`,`${prefix}.journeys.json`,`${prefix}.trace.json`];
  [state.map,state.journeys,state.trace]=await Promise.all(files.map(x=>fetch(base+x).then(r=>r.json())));
  const vr=await fetch(`${base}${prefix}.variables.json`); state.variables=vr.ok?await vr.json():null;
+ // package mode: when the viewer is dropped into a built inspection package,
+ // read the runner-derived relationships instead of re-deriving them (invariant 4)
+ state.links=await tryFetch('links.json');
+ state.findings=await tryFetch('findings.json');
+ state.coverage=await tryFetch('coverage.json');
  state.role=state.map.roles[0]; render();
 }
+async function tryFetch(url){try{const r=await fetch(url);return r.ok?await r.json():null}catch(e){return null}}
 function can(role,node){return state.map.permissions.some(p=>p.subject==='role:'+role&&p.object==='node:'+node&&p.relation==='viewer')}
 function esc(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function showSource(){
@@ -29,15 +35,25 @@ async function showSource(){
  source.innerHTML=`<div class=sub>${esc(file)}:${line}</div><pre>loading source context…</pre>`;
  try{const text=await fetch('../'+file).then(r=>r.text()); const lines=text.split(/\r?\n/); const from=Math.max(0,line-3),to=Math.min(lines.length,line+2); source.innerHTML=`<div class=sub>${esc(file)}:${line}</div><pre>${lines.slice(from,to).map((x,i)=>`${from+i+1===line?'➜ ':'  '}${from+i+1}: ${esc(x)}`).join('\n')}</pre>`}catch(e){source.innerHTML=`<div class=bad>source unavailable: ${esc(file)}</div>`}
 }
+function linksIndex(){
+ // selected node -> exact journey-step and trace-event coordinates (package mode)
+ if(!state.links) return null;
+ const entry=(state.links.links||[]).find(l=>l.mapNodeId===state.selected);
+ if(!entry) return {steps:new Set(),events:new Set()};
+ return {
+  steps:new Set(entry.journeySteps.map(x=>`${x.journeyId}:${x.step}`)),
+  events:new Set(entry.traceEvents.map(x=>`${x.journeyId}:${x.event}`))
+ };
+}
 function render(){
  role.innerHTML=state.map.roles.map(r=>`<option ${r===state.role?'selected':''}>${r}</option>`).join('');
  nodes.innerHTML=state.map.nodes.map(n=>`<div class="node ${n.id===state.selected?'active':''}" onclick="selectNode('${n.id}')"><b>${n.title}</b><small>${n.id} · ${n.type} · ${can(state.role,n.id)?'<span class=ok>reachable</span>':'<span class=bad>restricted</span>'}</small></div>`).join('');
  const selected=state.map.nodes.find(n=>n.id===state.selected); room.innerHTML=selected?`<h2>${selected.title}</h2><div class="pill">${selected.type}</div><p>${selected.id}</p><p class="sub">room/product viewport placeholder for this Map node.</p><p>incoming/outgoing links:</p>${state.map.edges.filter(e=>e.from===selected.id||e.to===selected.id).map(e=>`<div class=edge>${e.from} → ${e.to} <span class=pill>${e.type}</span></div>`).join('')}`:'<h2>select a node</h2><p class=sub>one selection. many linked reflections.</p>';
- journeys.innerHTML=state.journeys.map(j=>`<div class=card><b>${j.title}</b><small>${j.id}</small>${j.steps.map((s,i)=>`<div class="trace ${((s.to||s.target||j.initial.node)===state.selected)?'active':''}" onclick="selectStep('${j.id}',${i},'${s.to||s.target||j.initial.node}')">${i+1}. ${s.type} ${s.to||s.target||s.action||s.label||''} <span class=pill>${s.expect||''}</span></div>`).join('')}</div>`).join('');
- trace.innerHTML=state.trace.journeys.map(j=>`<div class=card><b>${j.journeyId}</b> <span class=${j.passed?'ok':'bad'}>${j.passed?'PASS':'FAIL'}</span>${j.events.map((e,i)=>`<div class="trace ${e.detail.includes(state.selected||'§§never')?'active':''}">${i+1}. ${e.detail}</div>`).join('')}</div>`).join('');
+ journeys.innerHTML=state.journeys.map(j=>{const li=linksIndex();return `<div class=card><b>${j.title}</b><small>${j.id}</small>${j.steps.map((s,i)=>{const coord=`${j.id}:${i+1}`;const hit=li?li.steps.has(coord):((s.to||s.target||j.initial.node)===state.selected);return `<div class="trace ${state.selected&&hit?'active':''}" onclick="selectStep('${j.id}',${i},'${s.to||s.target||j.initial.node}')">${i+1}. ${s.type} ${s.to||s.target||s.action||s.label||''} <span class=pill>${s.expect||''}</span></div>`}).join('')}</div>`}).join('');
+ trace.innerHTML=state.trace.journeys.map(j=>{const li=linksIndex();return `<div class=card><b>${j.journeyId}</b> <span class=${j.passed?'ok':'bad'}>${j.passed?'PASS':'FAIL'}</span>${j.events.map((e,i)=>{const coord=`${j.journeyId}:${i+1}`;const hit=li?li.events.has(coord):e.detail.includes(state.selected||'§§never');return `<div class="trace ${state.selected&&hit?'active':''}">${i+1}. ${e.detail}</div>`}).join('')}</div>`}).join('');
  selection.innerHTML=state.selected?`<b>selected:</b> ${state.selected}<br><span class=sub>Map path, Journey steps, Trace events, variables, and source/code links resolve from this shared selection.</span>`:'<span class=sub>click a Map node or Journey step.</span>';
  variables.innerHTML=state.variables?state.variables.variables.filter(v=>(!state.selected||v.mapNodes.includes(state.selected))&&(!state.selectedJourney||v.journeySteps.some(s=>s.journeyId===state.selectedJourney&&s.step===state.selectedStep+1))).map(v=>`<div class="card"><b>${v.name}</b><small>${v.id} · ${v.kind}</small><div class=sub>${v.signature}</div><div>defined: <span class=pill>${v.definedIn.file}:${v.definedIn.line}</span></div><div>maps: ${v.mapNodes.join(', ')}</div></div>`).join('')||'<span class=sub>no linked variables for this selection.</span>':'<span class=sub>no Variable Matrix supplied for this fixture.</span>';
  pseudocode.textContent=state.selectedJourney?(()=>{const j=state.journeys.find(x=>x.id===state.selectedJourney),s=j?.steps[state.selectedStep];return s?`Journey: ${j.id}\nstep ${state.selectedStep+1}: ${s.type}\ntarget: ${s.to||s.target||''}\naction: ${s.action||''}\nexpect: ${s.expect||''}\n\nexecute(step, map, state)\nrecord(step, result)\nassert(result == expected)`:'click a Journey step to highlight the related execution path.'})():'click a Journey step to highlight the related execution path.';
- findings.innerHTML='<div class="card"><b>Findings</b><p class="ok">No findings in the current declarative demo Trace.</p><p class="sub">Expected denials are preserved as evidence, not misclassified as failures.</p></div>'; showSource();}function selectStep(journeyId,index,id){state.selected=id;state.selectedJourney=journeyId;state.selectedStep=index;render()}
+ findings.innerHTML=(state.findings&&state.findings.length)?state.findings.map(f=>`<div class="finding"><b>${f.kind}</b> <span class=pill>${f.category}</span> <span class=pill>${f.severity}</span> <span class=pill>${f.confidence}</span><div class=sub>${f.message||''}</div><small>${f.source?`${f.source.journeyId} @ step ${f.source.step}`:''}</small></div>`).join(''):'<div class="card"><b>Findings</b><p class=ok>none recorded</p><p class=sub>expected denials are evidence, not failures; mismatches and drift become findings</p></div>'; showSource();}function selectStep(journeyId,index,id){state.selected=id;state.selectedJourney=journeyId;state.selectedStep=index;render()}
 function selectNode(id){state.selected=id;state.selectedJourney=null;state.selectedStep=null;render()} role.onchange=()=>{state.role=role.value;render()}; reset.onclick=()=>{state.selected=null;state.selectedJourney=null;state.selectedStep=null;state.role=state.map.roles[0];render()}; load();
 </script></body></html>

@@ -128,9 +128,11 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 
 ### Phase 8 — Close the audit's open items
 
-- [ ] 8.1 Viewer audit (invariant 4): `viewer/index.html` renders packages without re-deriving relationships; a conformance test pins links.json ↔ viewer.
-- [ ] 8.2 Adjacent-approach appendix (reachability/policy analysis, model-based testing) added to SELF_ASSESSMENT.md.
-- [ ] 8.3 Full audit re-run: target 23/23 caught-or-sound, zero silent, zero tracebacks; byte-deterministic packages still hold.
+- [x] 8.1 Viewer audit (invariant 4): `viewer/index.html` renders packages without re-deriving relationships; a conformance test pins links.json ↔ viewer.
+- [x] 8.2 Adjacent-approach appendix (reachability/policy analysis, model-based testing) added to SELF_ASSESSMENT.md.
+- [x] 8.3 Full audit re-run: target 23/23 caught-or-sound, zero silent, zero tracebacks; byte-deterministic packages still hold.
+
+**Accept (met 2026-11-20):** viewer consumes `links.json`/`findings.json` in package mode (highlights from exact coordinates, findings rendered with taxonomy pills), pinned by `tests/test_viewer_conformance.py` (4 tests incl. node `--check` JS parse and links-coordinate verification); adjacent-approaches appendix added; full re-run clean — all 4 fixtures valid, packages byte-deterministic modulo runId/timestamp, 52 tests green, zero tracebacks. FUTURE_UPDATES.md and HANDOFF.md refreshed to the post-remediation truth.
 
 ## Session mapping
 
@@ -153,3 +155,4 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - 2026-11-20 — Phase 4 fix-up found by the new suite: `journeySteps` now also links checkpoint steps to the node where the trace resolved them (event index == step index), and the validator's interim no-entry warning is real.
 - 2026-11-20 — **Phase 6 landed**: `edge.requires` enforced against `roleCapabilities` (A12, with denial reasons in mismatch findings), entry nodes + per-role start sets enforced (A04), coverage metrics in trace + `coverage.json` (nodes/edges/permissions/per-role reachability), map-level `vocabulary` replaces the default CRUD vocabulary (invariant 5) proven by `examples/brewery.*` (brew/siphon/seal/taste). Suite: 38 tests green. A04/A12 suite cases flipped from interim warnings to enforcement assertions.
 - 2026-11-20 — **Phase 7 landed** (all five depth features in one sitting, one commit): `assert_unreachable` proofs of absence (7.1), `adapters/` contract + DeclarativeMapAdapter + Trace comparison with invariant-2 byte-pin (7.2), matrix journey expansion with collision-checked ids and observational probes (7.3), `tools/diff_traces.py` regression reports (7.4), conditional edges `when.state` with trace-resident state and dead-guard warnings (7.5). Suite: 48 tests green. Matrix re-synced; committed traces regenerated (toolVersion 1.2.0).
+- 2026-11-20 — **Phase 8 landed — REMEDIATION COMPLETE**: viewer consumes runner-derived links.json/findings.json with conformance tests (8.1), adjacent-approaches appendix in SELF_ASSESSMENT (8.2), full re-run 23/23 ideal outcomes + byte-deterministic packages + 52 tests green (8.3). README file list/status, FUTURE_UPDATES.md ledger, and HANDOFF.md refreshed. Next: independent re-assessment + founder review.

@@ -14,7 +14,7 @@
       "usedBy": [
         {
           "file": "tools/validate_project_map.py",
-          "line": 302
+          "line": 29
         }
       ],
       "mapNodes": [
@@ -96,7 +96,7 @@
       "usedBy": [
         {
           "file": "tools/build_inspection_package.py",
-          "line": 151
+          "line": 152
         }
       ],
       "mapNodes": [
@@ -122,7 +122,7 @@
       "usedBy": [
         {
           "file": "viewer/index.html",
-          "line": 41
+          "line": 57
         }
       ],
       "mapNodes": [

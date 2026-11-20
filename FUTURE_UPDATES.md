@@ -30,13 +30,13 @@
 
 ## Next build — make the model stronger
 
-- [ ] Validate every Map against `spec/map.schema.json`.
-- [ ] Validate every Journey against `spec/journey.schema.json`.
-- [ ] Add clear validation errors with file path, record, and reason.
+- [x] Validate every Map against `spec/map.schema.json` (vendored dependency-free validator).
+- [x] Validate every Journey against `spec/journey.schema.json`.
+- [x] Add clear validation errors with file path, record, and reason (collect-all-errors, never crashes).
 - [x] Add a test command that runs validation and Journeys together.
-- [ ] Add a formal Trace schema.
-- [ ] Add a formal Finding schema.
-- [ ] Separate expected denials from unexpected failures in the output.
+- [x] Add a formal Trace schema (with run provenance: runId/timestamp/toolVersion/mapSha256/journeysSha256).
+- [x] Add a formal Finding schema (rule-based taxonomy: category/severity/confidence).
+- [x] Separate expected denials from unexpected failures in the output (expectations are opt-in; mismatches become findings with denial reasons).
 - [x] Add Journey result summaries that a person can read quickly.
 - [x] Add exit codes for CI use.
 
@@ -124,9 +124,9 @@ This is the complete path from the current public foundation to the full change-
 
 ### Phase 1 — Make the contracts executable
 
-- [ ] Validate every Map against `spec/map.schema.json`.
-- [ ] Validate every Journey against `spec/journey.schema.json`.
-- [ ] Add clear validation errors with file path, record, and reason.
+- [x] Validate every Map against `spec/map.schema.json` (vendored dependency-free validator).
+- [x] Validate every Journey against `spec/journey.schema.json`.
+- [x] Add clear validation errors with file path, record, and reason (collect-all-errors, never crashes).
 - [ ] Add a formal `spec/trace.schema.json`.
 - [ ] Add a formal `spec/finding.schema.json`.
 - [ ] Add stable IDs to Map nodes, edges, roles, capabilities, Journeys, Traces, and Findings.
@@ -357,3 +357,25 @@ That is **Pac-Man time travel**: the project can see what a change does before t
 - 2026-11-06 — Expanded the ledger from the immediate backlog to the full Map → Journey → Trace → Findings → Pac-Man time-travel route.
 - 2026-11-07 — Paused after verified linked source/pseudocode inspection and created `HANDOFF.md`.
 - 2026-11-06 — Created the public update ledger after the first real MindWaveMine Map, Journeys, runner, and Trace landed.
+
+## Remediation landing (2026-11-20)
+
+- [x] Unified validation gate: runner and builder refuse un-validated documents.
+- [x] Overwrite guard: outputs can never clobber inputs; atomic writes everywhere.
+- [x] Trace provenance: runId, timestamp, toolVersion, Map/Journey SHA-256 in every Trace and Finding.
+- [x] Rule-based Finding taxonomy (category/severity/confidence; hardcoded severity removed).
+- [x] Exact `links.json` from structured trace nodes; Map-derived flowchart and pseudocode.
+- [x] Variable Matrix verified reference-by-reference; stale lines regenerate as findings.
+- [x] 23-case adversarial acceptance suite + 300-seed property fuzz + overwrite-guard tests + viewer conformance tests.
+- [x] GitHub Actions CI validating every push (fixtures, doctor, runs, packages, suite, findings-vs-baseline gate).
+- [x] `map_doctor.py` structural health checks.
+- [x] Entry nodes and per-role start sets enforced.
+- [x] `edge.requires` enforced against `roleCapabilities` — capabilities are real.
+- [x] Coverage metrics: what the Journeys did and did not test (`coverage.json`).
+- [x] Map-level action vocabulary (invariant 5) proven by the non-CRUD brewery fixture.
+- [x] `assert_unreachable` proofs of absence.
+- [x] Adapter contract (`adapters/`) with Map-comparison and invariant-2 byte-pin.
+- [x] Data-driven matrix Journeys (expansion is Journeys-only).
+- [x] Differential traces (`tools/diff_traces.py`).
+- [x] Conditional edges (`when.state`) with trace-resident state.
+- [x] Viewer reads runner-derived `links.json`/`findings.json` in package mode (invariant 4 conformance test).

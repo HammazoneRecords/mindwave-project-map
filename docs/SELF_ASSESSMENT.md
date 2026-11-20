@@ -142,3 +142,44 @@ Map node
 ```
 
 That tunnel should be implemented and then assessed with a dedicated Journey before the 3D maze or live adapter is expanded.
+
+## Appendix — adjacent approaches (Phase 8.2)
+
+Where this model sits among neighboring techniques, and what each would add:
+
+**Reachability / policy analysis.** The Map is already a labeled graph with per-role
+traversal rules (viewer permission, `edge.requires` capability gates, conditional
+state guards). `map_doctor.py` and the coverage report do per-role BFS reachability;
+a dedicated policy-analysis pass would additionally check *global* properties — every
+role can reach every node it must reach, no role can reach what policy forbids
+(`assert_unreachable` journeys already encode the second class as tests), and
+dead-end detection beyond single roles. This is the shortest path to treating Maps
+as machine-checked policy documents rather than diagrams.
+
+**Model-based testing.** Journeys are hand-authored today; the matrix journey
+expansion is the first data-driven step. A model-based generator would walk the
+Map graph automatically — enumerate shortest paths per role, generate probes for
+every (role, capability, node) triple, and assert each generated Journey against
+the declarative expectations. The existing suite (validator gate, trace schema,
+seeded fuzz property) gives a generated Journey the same guarantees a hand-written
+one gets, so the generator needs no new infrastructure.
+
+**Property-based testing.** `tests/test_property.py` already proves the core
+runtime property ("validator accepts ⟹ runner never crashes") with 300 seeded
+random documents. A Hypothesis-style layer on top would grow targeted generators
+(e.g. always-accepted maps, or maps with specific permission shapes) and shrink
+failing cases to minimal documents. The seeded stdlib generator stays the runtime
+default; property frameworks remain a dev-only extra.
+
+**Differential testing.** `tools/diff_traces.py` compares two traces of the same
+Map revision family and reports regressions, fixes, finding deltas, and coverage
+loss — the Pac-Man time travel comparison loop, headless. Its natural extension is
+replaying the same Journeys against a proposed Map revision in CI and blocking the
+merge on any pass→fail regression, which is exactly the comparison the
+project_map_flow pipeline diagram describes.
+
+**Mutation-style Map testing.** The negation of the seeded fuzz: apply small
+mutations to a valid Map (drop a permission, add a wrong edge, tighten a
+capability) and assert that some committed Journey *fails* for the right reason.
+A Map that no Journey notices being broken is under-tested; mutation analysis
+would measure exactly that gap from the existing coverage report.
