@@ -2,6 +2,20 @@
 
 > use Project Map to examine Project Map. high-level first, then tunnel vision where the structure needs more light.
 
+## Remediation status (2026-11-20)
+
+The independent audit's Phases 0–4 have landed and are regression-tested. What this changes about the claims below:
+
+- **Validator is real**: JSON Schema gate (vendored, dependency-free) + semantic checks, collect-all-errors, never crashes on malformed input.
+- **Invariant 1 holds**: output paths that collide with input documents are refused; all writes are atomic.
+- **Invariant 3 holds**: every Trace/Finding carries runId, timestamp, toolVersion, and the SHA-256 of the exact Map + Journey documents executed.
+- **Findings have a taxonomy**: category ∈ {under_permission, over_permission, missing_edge, spec_drift, unreachable}, rule-based severity and confidence — no hardcoded "medium".
+- **links.json is exact**: structured trace-event node references replace substring matching; no default-to-start-node.
+- **flowchart.mmd / pseudocode.txt derive from the supplied Map**; the pipeline description lives separately in `project_map_flow.py`.
+- **The Variable Matrix is verified**: every definedIn/usedBy reference, mapNode, and journeyStep is checked; stale references become spec_drift findings. The committed matrix was regenerated to match the current source.
+
+Still open (tracked in REMEDIATION_PLAN.md): the full adversarial test suite + CI (Phase 5), entry nodes / edge.requires enforcement / coverage metrics / parameterized vocabulary (Phase 6), depth features (Phase 7), viewer conformance (Phase 8).
+
 ## Assessment input
 
 - Map: `examples/project-map-self.map.json`
@@ -59,13 +73,9 @@ This proves the declared high-level dependency path is internally traversable. I
 Schemas → Validator → Runner
 ```
 
-It also attempted a validation action as the `auditor` role and received the expected denial. That keeps the distinction visible between:
+It also attempted a create action as the `auditor` role and received the expected denial. The denial is meaningful because the `architect` role holds the same grant on that node — read-only audit is separated from write access, and the same act would be allowed for another role (audit D3, fixed).
 
-- seeing the contract;
-- traversing the validation path;
-- being permitted to change or invoke the validation capability.
-
-Result: **PASS** — 4 events, expected denial preserved as evidence.
+Result: **PASS** — 5 events, expected denial preserved as evidence.
 
 ### Inspection tunnel
 
@@ -93,12 +103,12 @@ This confirms the current inspection skin can be represented as part of the syst
 ### Current gaps exposed by the self-map
 
 - The viewer has a generic room/product placeholder, not a live product adapter.
-- The Variable Matrix is now loaded by the generic viewer in `?fixture=self` mode and filters by selected Map node.
+- The Variable Matrix is loaded by the generic viewer in `?fixture=self` mode and filters by selected Map node; the builder now verifies every reference in it (Phase 4).
 - Source-code context is not yet linked to Journey steps or Findings.
 - Journey steps can be selected, but full playback is not implemented.
-- Findings are currently represented in the package contract, but the demo self-trace has no generated Findings.
+- Findings are represented in the package contract with a rule-based taxonomy; the demo self-trace generates none because all expectations hold (a deliberate, verified outcome — mismatches and drift produce Findings in the committed regression tests).
 - The self-map is hand-authored; a source scanner has not yet generated it from the repository.
-- The package builder exports the variable matrix (with `--variables`), source references, and links; selected code context is not yet exported.
+- The package builder exports the variable matrix (with `--variables`), source references, links, and Map-derived flowchart/pseudocode; selected code context is not yet exported.
 
 ## Assessment boundary
 

@@ -81,22 +81,22 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 
 ### Phase 3 — Provenance and Findings (D3, D7, D8) — audit §5 step 3 (S–M)
 
-- [ ] 3.1 Trace header gains `runId` (UUID4), `timestamp` (UTC), `toolVersion`, `mapSha256`, `journeysSha256`; the schema's declared `mapVersion`/`runId` fields get populated for real.
-- [ ] 3.2 Map and Journey documents gain optional `version`; the builder records the content hash in every Finding's `source`.
-- [ ] 3.3 Finding taxonomy: `category` ∈ {under_permission, over_permission, missing_edge, spec_drift, unreachable}, rule-based `severity`, `confidence` field; the hardcoded `"medium"` dies (D8).
-- [ ] 3.4 The dead `missing_edge` branch (A17) is repaired or removed; over-permission and under-permission produce distinct categories (A18).
-- [ ] 3.5 Replace the self-map's vacuous `validate` denial evidence with a denial that actually distinguishes (D3). **Done early (2026-11-20, in Phase 1):** the fixture now denies `auditor` acting `create` on `self_assessment` — meaningful because `architect` holds that grant there; the unknown-action check would have rejected the old evidence anyway.
+- [x] 3.1 Trace header gains `runId` (UUID4), `timestamp` (UTC), `toolVersion`, `mapSha256`, `journeysSha256`; the schema's declared `mapVersion`/`runId` fields get populated for real.
+- [x] 3.2 Map and Journey documents gain optional `version`; the builder records the content hash in every Finding's `source`.
+- [x] 3.3 Finding taxonomy: `category` ∈ {under_permission, over_permission, missing_edge, spec_drift, unreachable}, rule-based `severity`, `confidence` field; the hardcoded `"medium"` dies (D8).
+- [x] 3.4 The dead `missing_edge` branch (A17) is repaired or removed; over-permission and under-permission produce distinct categories (A18).
+- [x] 3.5 Replace the self-map's vacuous `validate` denial evidence with a denial that actually distinguishes (D3). **Done early (2026-11-20, in Phase 1):** the fixture now denies `auditor` acting `create` on `self_assessment` — meaningful because `architect` holds that grant there; the unknown-action check would have rejected the old evidence anyway.
 
-**Accept:** two Map revisions with the same id are distinguishable in any Finding; A17/A18 produce distinct kinds; expected-denial evidence is no longer guaranteed-pass.
+**Accept (met 2026-11-20):** two Map revisions with the same id are distinguishable in any Finding (content hash in `source.mapSha256`, plus `mapVersion` when declared); A17/A18 produce distinct kinds (missing_edge vs under/over_permission); expected-denial evidence is no longer guaranteed-pass. Trace events carry exact `node` references for Phase 4's links.
 
 ### Phase 4 — The package tells the truth (D5, D6, D9, D10) — audit §5 step 4 (S–M)
 
-- [ ] 4.1 `links.json` is computed from step indices and event ordering (runner-derived), never substring matching; no default-to-start-node; duplicate journey ids are already rejected upstream (Phase 1). Fixes A15, A22, and the checkpoint mislinking.
-- [ ] 4.2 `flowchart.mmd` and `pseudocode.txt` are generated from the supplied Map. `project_map_flow.py` keeps describing the pipeline itself, clearly labeled.
-- [ ] 4.3 The builder verifies the Variable Matrix: every `definedIn.line` symbol check, every `usedBy` reference resolves; dangling refs become findings. The stale lines get regenerated (D9).
-- [ ] 4.4 SELF_ASSESSMENT.md and README updated to post-remediation reality; stale claims corrected (D10).
+- [x] 4.1 `links.json` is computed from step indices and event ordering (runner-derived), never substring matching; no default-to-start-node; duplicate journey ids are already rejected upstream (Phase 1). Fixes A15, A22, and the checkpoint mislinking.
+- [x] 4.2 `flowchart.mmd` and `pseudocode.txt` are generated from the supplied Map (`tools/map_derived.py`). `project_map_flow.py` keeps describing the pipeline itself, clearly labeled.
+- [x] 4.3 The builder verifies the Variable Matrix (`tools/verify_variables.py`): every `definedIn`/`usedBy` file+line+symbol check, every `mapNodes` and `journeySteps` reference resolves; dangling refs become `spec_drift` findings. The stale lines were regenerated (D9).
+- [x] 4.4 SELF_ASSESSMENT.md and README updated to post-remediation reality; stale claims corrected (D10).
 
-**Accept:** viewer relationships equal runner relationships (conformance test lands in Phase 5); every package file means what the README says.
+**Accept (met 2026-11-20):** viewer relationships equal runner relationships (exact structured references; conformance test lands in Phase 5); every package file means what the README says. Note: a committed trace now contains volatile fields (runId/timestamp); determinism comparisons normalize those two fields and compare the rest byte-for-byte.
 
 ### Phase 5 — Tests + CI + map doctor (M) — audit §5 step 5
 
@@ -147,4 +147,5 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - 2026-11-20 — plan committed; baseline verified (all D1–D11 open at `6ff5371`).
 - 2026-11-20 — **Phase 0 landed** (commit `70480a9`): baseline reproduction saved, README command/file list fixed, Python 3.9 declared, JSON example replaces YAML, `.hermes/` removed.
 - 2026-11-20 — **Phases 1 + 2 landed in one commit** (deviation from one-commit-per-phase: the runner edit carries both the validation gate and the overwrite guard): new `schema_lite.py` + `vocabulary.py`, rewritten validator (collect-all-errors, never crashes), schemas describe reality, runner and builder gated, vacuous denial replaced, `fsutils.py` guard + atomic writes, 5 regression tests. Verification: all fixtures valid, `mindwavemine.trace.json` regenerates byte-identical, packages deterministic, 16/16 adversarial cases ideal, 5/5 unit tests. Remaining acceptance gap: A04/A12 warn instead of enforce (Phase 6), the 23-case suite + CI + doctor (Phase 5).
-- Push status: blocked — the `mindwave-maze-sandbox` deploy key is registered on `raas-maze` but not yet on this repo. Founder homework: add it (write access) at `github.com/HammazoneRecords/mindwave-project-map → Settings → Deploy keys`, then `git push origin main` from the sandbox.
+- 2026-11-20 — **Phase 3 landed** (commit `162149c`): trace provenance (runId/timestamp/toolVersion/mapSha256/journeysSha256), optional Map/Journey `version`, Finding taxonomy in `tools/findings.py` (category/severity/confidence by rule), A17 dead branch repaired, A18 distinct categories, trace events carry exact node references.
+- 2026-11-20 — **Phase 4 landed**: exact `links.json` from structured trace nodes (D5), Map-derived `flowchart.mmd`/`pseudocode.txt` via `tools/map_derived.py` (D6), Variable Matrix verified reference-by-reference via `tools/verify_variables.py` and regenerated to current truth (D9), README + SELF_ASSESSMENT updated to post-remediation reality (D10). Deploy key for this repo registered (`mindwave-map-sandbox`) and stored in `skills/mindwave-deploy`; pushes unblocked.

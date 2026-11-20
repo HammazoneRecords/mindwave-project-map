@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""Build a portable inspection package from a Map and its Journeys."""
+"""Build a portable inspection package from a Map and its Journeys.
+
+Phase 4 (audit D5/D6/D9): every exported file now tells the truth.
+
+- links.json is computed from exact step targets and the trace events'
+  structured node references — no substring matching, no default-to-start
+  node, and duplicate journey ids are already rejected upstream (Phase 1).
+- flowchart.mmd and pseudocode.txt are derived from the supplied Map
+  (tools/map_derived.py); the pipeline description stays in
+  project_map_flow.py, clearly labeled.
+- the Variable Matrix (when supplied) is verified reference by reference
+  (tools/verify_variables.py); stale or dangling references become findings
+  instead of riding along silently.
+"""
 from __future__ import annotations
 
 import argparse
@@ -7,11 +20,11 @@ import json
 import sys
 from pathlib import Path
 
-# Reuse the existing validators, runner, and flow exports.
+# Reuse the existing validators, runner, and derived exporters.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from project_map_flow import MERMAID, PSEUDOCODE  # noqa: E402
 from fsutils import atomic_write_text, guard_output_against_inputs  # noqa: E402
-from findings import finding_from_raw  # noqa: E402
+from map_derived import mermaid_from_map, pseudocode_from_map  # noqa: E402
+from verify_variables import verify_variables  # noqa: E402
 from run_journeys import build_trace, index_map, run_journey, write_trace  # noqa: E402
 from validate_project_map import load, validate_all  # noqa: E402
 
@@ -23,16 +36,34 @@ def write_json(path: Path, value: object) -> None:
 def findings_from_trace(trace: dict) -> list[dict]:
     """Findings with the rule-based taxonomy (Phase 3): category, severity,
     and confidence are derived per finding kind — the audit's hardcoded
-    \"medium\" is gone (D8) — and every Finding pins the Map content that
+    "medium" is gone (D8) — and every Finding pins the Map content that
     produced it (D7)."""
     findings = []
     for result in trace["journeys"]:
         for finding in result["findings"]:
+            from findings import finding_from_raw
             findings.append(finding_from_raw(finding, result["journeyId"], trace))
     return findings
 
 
+def findings_from_variables(variables_findings: list[dict], trace: dict) -> list[dict]:
+    """Variable-matrix findings, one source block per stale reference."""
+    from findings import finding_from_raw
+    out = []
+    for raw in variables_findings:
+        # journeyId 'variable-matrix' marks these as document-level drift;
+        # step is the variable's index in the matrix
+        out.append(finding_from_raw(raw, "variable-matrix", trace))
+    return out
+
+
 def build_links(project_map: dict, journeys: list[dict], trace: dict) -> dict:
+    """Exact node -> journey-step -> trace-event links (audit D5, Phase 4.1).
+
+    A journey step references a node only when its own `to`/`target` names
+    that node. A trace event references a node only through the runner's
+    structured `event.node` field — never by substring-matching detail text.
+    """
     links = []
     for node in project_map["nodes"]:
         node_id = node["id"]
@@ -40,14 +71,12 @@ def build_links(project_map: dict, journeys: list[dict], trace: dict) -> dict:
         trace_events = []
         for journey in journeys:
             for index, step in enumerate(journey["steps"], 1):
-                target = step.get("to") or step.get("target") or journey["initial"]["node"]
-                if target == node_id:
+                if (step.get("to") or step.get("target")) == node_id:
                     journey_steps.append({"journeyId": journey["id"], "step": index})
-            result = next((r for r in trace["journeys"] if r["journeyId"] == journey["id"]), None)
-            if result:
-                for index, event in enumerate(result["events"], 1):
-                    if node_id in event.get("detail", ""):
-                        trace_events.append({"journeyId": journey["id"], "event": index})
+        for result in trace["journeys"]:
+            for index, event in enumerate(result["events"], 1):
+                if event.get("node") == node_id:
+                    trace_events.append({"journeyId": result["journeyId"], "event": index})
         links.append({"mapNodeId": node_id, "journeySteps": journey_steps, "traceEvents": trace_events})
     return {"schemaVersion": project_map["schemaVersion"], "mapId": project_map["id"], "links": links}
 
@@ -76,6 +105,14 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path)
     findings = findings_from_trace(trace)
 
+    variables_findings: list[dict] = []
+    if variables_path is not None:
+        variables = load(variables_path)
+        if variables.get("mapId") != project_map["id"]:
+            raise ValueError(f"{variables_path}: mapId does not match {project_map['id']}")
+        variables_findings = verify_variables(variables, project_map, journeys)
+        findings.extend(findings_from_variables(variables_findings, trace))
+
     output.mkdir(parents=True, exist_ok=True)
     write_json(output / "map.json", project_map)
     write_json(output / "journeys.json", journeys)
@@ -84,13 +121,11 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     write_json(output / "links.json", build_links(project_map, journeys, trace))
     atomic_write_text(output / "source-reference.md", source_reference(project_map, map_path, journeys_path))
     if variables_path is not None:
-        variables = load(variables_path)
-        if variables.get("mapId") != project_map["id"]:
-            raise ValueError(f"{variables_path}: mapId does not match {project_map['id']}")
         write_json(output / "variables.json", variables)
-    atomic_write_text(output / "flowchart.mmd", MERMAID.rstrip() + "\n")
-    atomic_write_text(output / "pseudocode.txt", PSEUDOCODE.rstrip() + "\n")
-    return trace, findings, warnings
+    # D6: derived from the supplied Map — not the tool pipeline
+    atomic_write_text(output / "flowchart.mmd", mermaid_from_map(project_map))
+    atomic_write_text(output / "pseudocode.txt", pseudocode_from_map(project_map))
+    return trace, findings, warnings + [f"VARIABLE DRIFT: {f['kind']} in {f.get('variable', '?')} ({f.get('reference', f.get('node', ''))})" for f in variables_findings]
 
 
 def main() -> int:

@@ -40,7 +40,7 @@ The first release establishes the vocabulary, schema direction, example Map, and
 
 **Requirements:** Python >= 3.9 (the tools use `str.removeprefix`). No third-party runtime dependencies — the tools run on the standard library alone.
 
-An independent audit (2026-11-17) found the tools enforce less than this README claims and produced a prioritized remediation plan. The work is tracked in [REMEDIATION_PLAN.md](./REMEDIATION_PLAN.md); until a phase lands there, treat the tool claims below as describing intent, not verified guarantees.
+An independent audit (2026-11-17) found the tools enforce less than this README claims. Remediation is tracked and landing in [REMEDIATION_PLAN.md](./REMEDIATION_PLAN.md): Phases 0–4 are complete (hygiene, unified validation, overwrite guard, trace provenance, truthful packages) and are covered by regression tests. Phases 5–8 (full adversarial test suite, CI, entry nodes, coverage, depth features, viewer conformance) are in progress — check the plan's progress log for what is verified today.
 
 ## Project shape
 
@@ -113,7 +113,7 @@ python3 tools/validate_project_map.py \
   --journeys examples/mindwavemine.journeys.json
 ```
 
-It checks required fields, duplicate nodes, broken edge references, unknown roles, unknown permission targets, Journey/Map identity, initial nodes, and Journey move targets before execution.
+It enforces the JSON Schemas in `spec/` (via a vendored dependency-free validator), then the semantic checks a schema cannot express: journey roles, step types and per-type required fields, act targets and actions against the vocabulary, checkpoint labels, duplicate journey ids, duplicate edges, permission subject/object prefixes, and declared-but-ungranted capabilities. It reports ALL errors at once (collect-all-errors), converts malformed input into structured errors instead of tracebacks, and treats warnings as errors under `--strict`.
 
 
 The repository includes a Map and three executable Journeys for the MindWaveMine R&D Interface:
@@ -125,7 +125,7 @@ python3 tools/run_journeys.py \
   --trace examples/mindwavemine.trace.json
 ```
 
-The runner currently proves the declarative layer: allowed and denied movement, role permissions, checkpoints, and portable Trace output. It does not yet enforce declared `capabilities` or `edge.requires` (tracked in the remediation plan, Phase 6), and it does not pretend to be a live browser/API adapter. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
+The runner proves the declarative layer: allowed and denied movement, role permissions, checkpoints, and portable Trace output. Every Trace carries provenance — a runId, UTC timestamp, tool version, and the SHA-256 of the exact Map and Journey documents that were executed — so a Finding can always name the Map revision that produced it. It does not yet enforce declared `edge.requires` or entry nodes (tracked in the remediation plan, Phase 6), and it does not pretend to be a live browser/API adapter. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
 
 ## Build a portable inspection package
 
@@ -138,7 +138,7 @@ python3 tools/build_inspection_package.py \
   --output build/mindwavemine-inspection
 ```
 
-The output directory contains `map.json`, `journeys.json`, `trace.json`, `findings.json`, `links.json`, optional `variables.json`, `source-reference.md`, `flowchart.mmd`, and `pseudocode.txt`. `links.json` preserves shared Map-node → Journey-step → Trace-event relationships for linked viewers. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
+The output directory contains `map.json`, `journeys.json`, `trace.json` (with run provenance), `findings.json` (rule-based taxonomy: category, severity, confidence — no hardcoded severities), `links.json` (exact node → journey-step → trace-event links derived from structured trace data, not substring matching), optional `variables.json` (verified reference-by-reference when supplied; stale lines become findings), `source-reference.md`, and a `flowchart.mmd` + `pseudocode.txt` derived from the supplied Map itself. The command exits non-zero when validation fails or a Journey fails. This is a declarative fixture runner and package exporter; it is not a live browser/API adapter or visualizer.
 
 ## Self-assessment
 
