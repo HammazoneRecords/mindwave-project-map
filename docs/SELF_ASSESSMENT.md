@@ -98,7 +98,7 @@ This confirms the current inspection skin can be represented as part of the syst
 - Journey steps can be selected, but full playback is not implemented.
 - Findings are currently represented in the package contract, but the demo self-trace has no generated Findings.
 - The self-map is hand-authored; a source scanner has not yet generated it from the repository.
-- The package builder exports flow and pseudocode, but not yet variable matrix, source references, links, or selected code context.
+- The package builder exports the variable matrix (with `--variables`), source references, and links; selected code context is not yet exported.
 
 ## Assessment boundary
 

@@ -14,6 +14,11 @@
     "capabilities": { "type": "array", "items": { "type": "string" } },
     "permissions": { "type": "array", "items": { "$ref": "#/$defs/permission" } },
     "constraints": { "type": "array", "items": { "type": "string" } },
+    "source": {
+      "type": "object",
+      "description": "Where this Map was captured from (repository, branch, purpose).",
+      "additionalProperties": true
+    },
     "metadata": { "type": "object", "additionalProperties": true }
   },
   "$defs": {

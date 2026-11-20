@@ -72,10 +72,15 @@
         {
           "step": 3,
           "outcome": "pass",
-          "detail": "act validate on validator: denied"
+          "detail": "act create on self_assessment: denied"
         },
         {
           "step": 4,
+          "outcome": "pass",
+          "detail": "comment: meaningful denial: architect holds creator on self_assessment, auditor does not - read-only audit is separated from write access, and the same act would be allowed for another role"
+        },
+        {
+          "step": 5,
           "outcome": "pass",
           "detail": "checkpoint: contract-boundary-inspected"
         }

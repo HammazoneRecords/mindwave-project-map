@@ -10,12 +10,13 @@ from pathlib import Path
 # Reuse the existing validators, runner, and flow exports.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from project_map_flow import MERMAID, PSEUDOCODE  # noqa: E402
+from fsutils import atomic_write_text, guard_output_against_inputs  # noqa: E402
 from run_journeys import index_map, run_journey  # noqa: E402
-from validate_project_map import load, validate_journeys, validate_map  # noqa: E402
+from validate_project_map import load, validate_all  # noqa: E402
 
 
 def write_json(path: Path, value: object) -> None:
-    path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+    atomic_write_text(path, json.dumps(value, indent=2) + "\n")
 
 
 def findings_from_trace(trace: dict) -> list[dict]:
@@ -70,11 +71,15 @@ def source_reference(project_map: dict, map_path: Path, journeys_path: Path) -> 
     return "\n".join(lines)
 
 
-def build_package(map_path: Path, journeys_path: Path, output: Path, variables_path: Path | None = None) -> tuple[dict, list[dict]]:
+def build_package(map_path: Path, journeys_path: Path, output: Path, variables_path: Path | None = None) -> tuple[dict, list[dict], list[str]]:
+    # Invariant 1: the package must never overwrite its own inputs (audit A23).
+    inputs = [map_path, journeys_path] + ([variables_path] if variables_path else [])
+    guard_output_against_inputs(output, inputs)
     project_map = load(map_path)
     journeys = load(journeys_path)
-    validate_map(project_map, str(map_path))
-    validate_journeys(journeys, project_map, str(journeys_path))
+    errors, warnings = validate_all(project_map, journeys, str(map_path), str(journeys_path))
+    if errors:
+        raise ValueError("\n".join(f"ERROR: {e}" for e in errors))
 
     nodes, edges, permissions = index_map(project_map)
     results = [run_journey(journey, nodes, edges, permissions) for journey in journeys]
@@ -91,15 +96,15 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
     write_json(output / "trace.json", trace)
     write_json(output / "findings.json", findings)
     write_json(output / "links.json", build_links(project_map, journeys, trace))
-    (output / "source-reference.md").write_text(source_reference(project_map, map_path, journeys_path), encoding="utf-8")
+    atomic_write_text(output / "source-reference.md", source_reference(project_map, map_path, journeys_path))
     if variables_path is not None:
         variables = load(variables_path)
         if variables.get("mapId") != project_map["id"]:
             raise ValueError(f"{variables_path}: mapId does not match {project_map['id']}")
         write_json(output / "variables.json", variables)
-    (output / "flowchart.mmd").write_text(MERMAID.rstrip() + "\n", encoding="utf-8")
-    (output / "pseudocode.txt").write_text(PSEUDOCODE.rstrip() + "\n", encoding="utf-8")
-    return trace, findings
+    atomic_write_text(output / "flowchart.mmd", MERMAID.rstrip() + "\n")
+    atomic_write_text(output / "pseudocode.txt", PSEUDOCODE.rstrip() + "\n")
+    return trace, findings, warnings
 
 
 def main() -> int:
@@ -110,10 +115,12 @@ def main() -> int:
     parser.add_argument("--variables", type=Path, help="optional Variable Matrix JSON")
     args = parser.parse_args()
     try:
-        trace, findings = build_package(args.map, args.journeys, args.output, args.variables)
+        trace, findings, warnings = build_package(args.map, args.journeys, args.output, args.variables)
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         print(f"INVALID: {exc}")
         return 2
+    for w in warnings:
+        print(f"WARNING: {w}")
 
     passed = sum(result["passed"] for result in trace["journeys"])
     total = len(trace["journeys"])

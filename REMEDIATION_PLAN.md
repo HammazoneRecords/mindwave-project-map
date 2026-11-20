@@ -52,32 +52,32 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 
 ### Phase 0 — Baseline + hygiene (S) — audit §5 step 0
 
-- [ ] 0.1 Reproduce the audit's execution log on HEAD: validate, run, build on both fixtures; confirm byte-identical rebuild. Save the outputs as the regression baseline under `tests/baseline/`.
-- [ ] 0.2 README: fix the builder command (single backslashes), refresh the "Project shape" file list, point "Next" at this plan, declare Python >= 3.9.
-- [ ] 0.3 Convert `examples/member-create.journey.yaml` into a loadable JSON example; delete the YAML.
-- [ ] 0.4 Remove `.hermes/plans/` from git.
+- [x] 0.1 Reproduce the audit's execution log on HEAD: validate, run, build on both fixtures; confirm byte-identical rebuild. Save the outputs as the regression baseline under `tests/baseline/`.
+- [x] 0.2 README: fix the builder command (single backslashes), refresh the "Project shape" file list, point "Next" at this plan, declare Python >= 3.9.
+- [x] 0.3 Convert `examples/member-create.journey.yaml` into a loadable JSON example; delete the YAML.
+- [x] 0.4 Remove `.hermes/plans/` from git.
 
 **Accept:** every README command pastes and runs verbatim; no unloadable examples; `git grep -i hermes` is empty.
 
 ### Phase 1 — Unify validation (D1, D2, D4) — audit §5 step 1 (S–M)
 
-- [ ] 1.1 New `tools/schema_lite.py` — vendored JSON-Schema subset validator (type, required, properties, items, enum, pattern, additionalProperties, minItems, `$defs`/`$ref`). No external dependency.
-- [ ] 1.2 Fix schema drift so schemas describe reality:
+- [x] 1.1 New `tools/schema_lite.py` — vendored JSON-Schema subset validator (type, required, properties, items, enum, pattern, additionalProperties, minItems, `$defs`/`$ref`). No external dependency.
+- [x] 1.2 Fix schema drift so schemas describe reality:
   - `journey.schema.json` describes the **file** (array of journeys); steps gain `move.to`, `act.target`, `act.action`, `checkpoint.label` requirements where the subset validator allows, else they are enforced semantically; `expect` enum becomes `allowed|denied` only; `assert` removed from the enum until implemented; `comment` stays as a legal no-op.
   - `map.schema.json` allows `source`.
   - `trace.schema.json` matches what the runner actually emits today (Phase 3 then extends it with `runId`, `mapSha256`, timestamps).
-- [ ] 1.3 Validator = schema gate first, then semantic checks; **collect-all-errors mode** (report every problem, never just the first); **never crashes** — catch-all converts any exception into a structured error (A10).
-- [ ] 1.4 New semantic checks: journey `initial.role` must exist in `roles` (A05); step types must be known (A06); `act` needs an existing `target` and a known action (A03, A07, A09); `checkpoint` needs `label` (A08); permission subjects must carry the `role:` prefix (A11); duplicate journey ids rejected (A15); duplicate edges on the same node pair rejected (A13); empty journeys array warns (A14); declared-but-ungranted capability warns (A01); unknown `move` target already checked (A02 stays sound).
-- [ ] 1.5 Runner and builder both call this one validator before doing anything (D2); the runner's private weak re-check is removed.
+- [x] 1.3 Validator = schema gate first, then semantic checks; **collect-all-errors mode** (report every problem, never just the first); **never crashes** — catch-all converts any exception into a structured error (A10).
+- [x] 1.4 New semantic checks: journey `initial.role` must exist in `roles` (A05); step types must be known (A06); `act` needs an existing `target` and a known action (A03, A07, A09); `checkpoint` needs `label` (A08); permission subjects must carry the `role:` prefix (A11); duplicate journey ids rejected (A15); duplicate edges on the same node pair rejected (A13); empty journeys array warns (A14); declared-but-ungranted capability warns (A01); unknown `move` target already checked (A02 stays sound).
+- [x] 1.5 Runner and builder both call this one validator before doing anything (D2); the runner's private weak re-check is removed.
 
-**Accept:** A03–A15 and A19 flip from silent to caught; A08–A11 become clean errors with zero tracebacks; the audit reproduction reruns clean.
+**Accept (met 2026-11-20):** A03–A15 and A19 flip from silent to caught; A08–A11 become clean errors with zero tracebacks; the audit reproduction reruns clean. Harness result: **16/16 cases match the audit's ideal outcomes** (`scripts/a_harness.py` pattern, committed as tests in Phase 5). A04 (entry nodes) and A12 (edge.requires enforcement) are deferred by design to Phase 6 — both now emit warnings instead of silence. D3's vacuous `validate` denial was fixed ahead of schedule (see 3.5) because the new unknown-action check correctly rejected the old fixture.
 
 ### Phase 2 — Guard the Map (A23, invariant 1) — audit §5 step 2 (S)
 
-- [ ] 2.1 Refuse when `--trace` (runner) or `--output` (builder) resolves to any input path (`--map`, `--journeys`, `--variables`), comparing resolved realpaths.
-- [ ] 2.2 All file writes go through temp file + `os.replace` (atomic).
+- [x] 2.1 Refuse when `--trace` (runner) or `--output` (builder) resolves to any input path (`--map`, `--journeys`, `--variables`), comparing resolved realpaths — including output directories that contain an input file.
+- [x] 2.2 All file writes go through temp file + `os.replace` (atomic) — `tools/fsutils.py`, used by runner and builder.
 
-**Accept:** A23 refused with a clear message; a regression test lands in `tests/` (suite grows in Phase 5).
+**Accept (met 2026-11-20):** A23 refused with a clear message; regression tests committed in `tests/test_guard.py` (5 tests, all green).
 
 ### Phase 3 — Provenance and Findings (D3, D7, D8) — audit §5 step 3 (S–M)
 
@@ -85,7 +85,7 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 - [ ] 3.2 Map and Journey documents gain optional `version`; the builder records the content hash in every Finding's `source`.
 - [ ] 3.3 Finding taxonomy: `category` ∈ {under_permission, over_permission, missing_edge, spec_drift, unreachable}, rule-based `severity`, `confidence` field; the hardcoded `"medium"` dies (D8).
 - [ ] 3.4 The dead `missing_edge` branch (A17) is repaired or removed; over-permission and under-permission produce distinct categories (A18).
-- [ ] 3.5 Replace the self-map's vacuous `validate` denial evidence with a denial that actually distinguishes (D3).
+- [ ] 3.5 Replace the self-map's vacuous `validate` denial evidence with a denial that actually distinguishes (D3). **Done early (2026-11-20, in Phase 1):** the fixture now denies `auditor` acting `create` on `self_assessment` — meaningful because `architect` holds that grant there; the unknown-action check would have rejected the old evidence anyway.
 
 **Accept:** two Map revisions with the same id are distinguishable in any Finding; A17/A18 produce distinct kinds; expected-denial evidence is no longer guaranteed-pass.
 
@@ -145,3 +145,6 @@ The audit's adversarial cases A01–A23 are the acceptance suite. Target outcome
 ## Progress log
 
 - 2026-11-20 — plan committed; baseline verified (all D1–D11 open at `6ff5371`).
+- 2026-11-20 — **Phase 0 landed** (commit `70480a9`): baseline reproduction saved, README command/file list fixed, Python 3.9 declared, JSON example replaces YAML, `.hermes/` removed.
+- 2026-11-20 — **Phases 1 + 2 landed in one commit** (deviation from one-commit-per-phase: the runner edit carries both the validation gate and the overwrite guard): new `schema_lite.py` + `vocabulary.py`, rewritten validator (collect-all-errors, never crashes), schemas describe reality, runner and builder gated, vacuous denial replaced, `fsutils.py` guard + atomic writes, 5 regression tests. Verification: all fixtures valid, `mindwavemine.trace.json` regenerates byte-identical, packages deterministic, 16/16 adversarial cases ideal, 5/5 unit tests. Remaining acceptance gap: A04/A12 warn instead of enforce (Phase 6), the 23-case suite + CI + doctor (Phase 5).
+- Push status: blocked — the `mindwave-maze-sandbox` deploy key is registered on `raas-maze` but not yet on this repo. Founder homework: add it (write access) at `github.com/HammazoneRecords/mindwave-project-map → Settings → Deploy keys`, then `git push origin main` from the sandbox.
