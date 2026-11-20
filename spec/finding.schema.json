@@ -2,14 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mindwaveja.com/project-map/schemas/finding.schema.json",
   "title": "MindWave Project Map Finding",
+  "description": "Findings carry a rule-based taxonomy (Phase 3, audit D8): category, severity, and confidence are derived from the finding kind, never hardcoded. source pins the Finding to the exact Map content via its SHA-256 (audit D7); mapVersion is recorded when the Map declares one.",
   "type": "object",
-  "required": ["kind", "severity", "status", "source"],
+  "required": ["kind", "category", "severity", "confidence", "status", "source"],
   "properties": {
     "kind":{"type":"string"},
+    "category":{"enum":["under_permission","over_permission","missing_edge","spec_drift","unreachable"]},
     "severity":{"enum":["info","low","medium","high","critical"]},
+    "confidence":{"enum":["high","medium","low"]},
     "status":{"enum":["open","accepted","resolved","blocked"]},
     "message":{"type":"string"},
-    "source":{"type":"object", "required":["mapId","journeyId","step"], "properties":{"mapId":{"type":"string"},"journeyId":{"type":"string"},"step":{"type":"integer"}}, "additionalProperties":false}
+    "source":{"type":"object", "required":["mapId","journeyId","step"], "properties":{"mapId":{"type":"string"},"journeyId":{"type":"string"},"step":{"type":"integer"},"mapVersion":{"type":"string"},"mapSha256":{"type":"string"},"journeysSha256":{"type":"string"},"runId":{"type":"string"}}, "additionalProperties":true}
   },
   "additionalProperties": false
 }

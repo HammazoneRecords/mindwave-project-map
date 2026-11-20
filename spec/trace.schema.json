@@ -2,13 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mindwaveja.com/project-map/schemas/trace.schema.json",
   "title": "MindWave Project Map Trace",
+  "description": "Every Trace carries provenance (Phase 3, audit D7): runId, UTC timestamp, toolVersion, and the SHA-256 of the exact Map and Journey documents that were executed. mapVersion is present when the Map declares a version.",
   "type": "object",
-  "required": ["schemaVersion", "mapId", "journeys"],
+  "required": ["schemaVersion", "mapId", "runId", "timestamp", "toolVersion", "mapSha256", "journeysSha256", "journeys"],
   "properties": {
     "schemaVersion": {"type":"string"},
     "mapId": {"type":"string"},
     "mapVersion": {"type":"string"},
     "runId": {"type":"string"},
+    "timestamp": {"type":"string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"},
+    "toolVersion": {"type":"string"},
+    "mapSha256": {"type":"string", "pattern": "^[0-9a-f]{64}$"},
+    "journeysSha256": {"type":"string", "pattern": "^[0-9a-f]{64}$"},
+    "coverage": {"type":"object"},
     "journeys": {"type":"array", "items":{"$ref":"#/$defs/result"}}
   },
   "$defs": {

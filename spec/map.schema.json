@@ -8,6 +8,7 @@
     "schemaVersion": { "type": "string" },
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
     "title": { "type": "string" },
+    "version": { "type": "string", "description": "Optional human revision label. Findings also record the content hash, so two revisions with the same id stay distinguishable." },
     "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
     "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
     "roles": { "type": "array", "items": { "type": "string" } },

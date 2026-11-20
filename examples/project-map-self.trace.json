@@ -1,6 +1,9 @@
 {
   "schemaVersion": "1.0.0",
   "mapId": "mindwave-project-map-self",
+  "runId": "e6280a48-4556-481e-acf3-f203f573cf21",
+  "timestamp": "2026-11-20T04:38:03Z",
+  "toolVersion": "1.0.0",
   "journeys": [
     {
       "journeyId": "self-high-level-audit",
@@ -12,42 +15,50 @@
         {
           "step": 1,
           "outcome": "pass",
-          "detail": "move readme -> formalization: allowed"
+          "detail": "move readme -> formalization: allowed",
+          "node": "formalization"
         },
         {
           "step": 2,
           "outcome": "pass",
-          "detail": "move formalization -> schemas: allowed"
+          "detail": "move formalization -> schemas: allowed",
+          "node": "schemas"
         },
         {
           "step": 3,
           "outcome": "pass",
-          "detail": "move schemas -> examples: allowed"
+          "detail": "move schemas -> examples: allowed",
+          "node": "examples"
         },
         {
           "step": 4,
           "outcome": "pass",
-          "detail": "move examples -> validator: allowed"
+          "detail": "move examples -> validator: allowed",
+          "node": "validator"
         },
         {
           "step": 5,
           "outcome": "pass",
-          "detail": "move validator -> runner: allowed"
+          "detail": "move validator -> runner: allowed",
+          "node": "runner"
         },
         {
           "step": 6,
           "outcome": "pass",
-          "detail": "move runner -> package_builder: allowed"
+          "detail": "move runner -> package_builder: allowed",
+          "node": "package_builder"
         },
         {
           "step": 7,
           "outcome": "pass",
-          "detail": "move package_builder -> viewer: allowed"
+          "detail": "move package_builder -> viewer: allowed",
+          "node": "viewer"
         },
         {
           "step": 8,
           "outcome": "pass",
-          "detail": "checkpoint: high-level-architecture-traversed"
+          "detail": "checkpoint: high-level-architecture-traversed",
+          "node": "viewer"
         }
       ],
       "findings": []
@@ -62,17 +73,20 @@
         {
           "step": 1,
           "outcome": "pass",
-          "detail": "move schemas -> validator: allowed"
+          "detail": "move schemas -> validator: allowed",
+          "node": "validator"
         },
         {
           "step": 2,
           "outcome": "pass",
-          "detail": "move validator -> runner: allowed"
+          "detail": "move validator -> runner: allowed",
+          "node": "runner"
         },
         {
           "step": 3,
           "outcome": "pass",
-          "detail": "act create on self_assessment: denied"
+          "detail": "act create on self_assessment: denied",
+          "node": "self_assessment"
         },
         {
           "step": 4,
@@ -82,7 +96,8 @@
         {
           "step": 5,
           "outcome": "pass",
-          "detail": "checkpoint: contract-boundary-inspected"
+          "detail": "checkpoint: contract-boundary-inspected",
+          "node": "runner"
         }
       ],
       "findings": []
@@ -97,20 +112,25 @@
         {
           "step": 1,
           "outcome": "pass",
-          "detail": "move package_builder -> viewer: allowed"
+          "detail": "move package_builder -> viewer: allowed",
+          "node": "viewer"
         },
         {
           "step": 2,
           "outcome": "pass",
-          "detail": "move viewer -> self_assessment: allowed"
+          "detail": "move viewer -> self_assessment: allowed",
+          "node": "self_assessment"
         },
         {
           "step": 3,
           "outcome": "pass",
-          "detail": "checkpoint: inspection-skin-boundary-inspected"
+          "detail": "checkpoint: inspection-skin-boundary-inspected",
+          "node": "self_assessment"
         }
       ],
       "findings": []
     }
-  ]
+  ],
+  "mapSha256": "0ba31dd63c39a8042d58d2be1a2a194c2e5f6f0ff9c3647cf9aa59511bbe66ac",
+  "journeysSha256": "3158518ea6c583567d9aa902d79b33aa3a0371ecbb330014aaed36c3d5517ca5"
 }

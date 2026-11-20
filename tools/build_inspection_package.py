@@ -11,7 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from project_map_flow import MERMAID, PSEUDOCODE  # noqa: E402
 from fsutils import atomic_write_text, guard_output_against_inputs  # noqa: E402
-from run_journeys import index_map, run_journey  # noqa: E402
+from findings import finding_from_raw  # noqa: E402
+from run_journeys import build_trace, index_map, run_journey, write_trace  # noqa: E402
 from validate_project_map import load, validate_all  # noqa: E402
 
 
@@ -20,25 +21,14 @@ def write_json(path: Path, value: object) -> None:
 
 
 def findings_from_trace(trace: dict) -> list[dict]:
+    """Findings with the rule-based taxonomy (Phase 3): category, severity,
+    and confidence are derived per finding kind — the audit's hardcoded
+    \"medium\" is gone (D8) — and every Finding pins the Map content that
+    produced it (D7)."""
     findings = []
     for result in trace["journeys"]:
         for finding in result["findings"]:
-            details = ", ".join(
-                f"{key}={value}" for key, value in finding.items() if key not in {"kind", "step"}
-            )
-            findings.append(
-                {
-                    "kind": finding["kind"],
-                    "severity": "medium",
-                    "status": "open",
-                    "message": details or finding["kind"],
-                    "source": {
-                        "mapId": trace["mapId"],
-                        "journeyId": result["journeyId"],
-                        "step": finding["step"],
-                    },
-                }
-            )
+            findings.append(finding_from_raw(finding, result["journeyId"], trace))
     return findings
 
 
@@ -83,17 +73,13 @@ def build_package(map_path: Path, journeys_path: Path, output: Path, variables_p
 
     nodes, edges, permissions = index_map(project_map)
     results = [run_journey(journey, nodes, edges, permissions) for journey in journeys]
-    trace = {
-        "schemaVersion": project_map["schemaVersion"],
-        "mapId": project_map["id"],
-        "journeys": results,
-    }
+    trace = build_trace(project_map, journeys, results, map_path=map_path, journeys_path=journeys_path)
     findings = findings_from_trace(trace)
 
     output.mkdir(parents=True, exist_ok=True)
     write_json(output / "map.json", project_map)
     write_json(output / "journeys.json", journeys)
-    write_json(output / "trace.json", trace)
+    write_trace(trace, output / "trace.json")
     write_json(output / "findings.json", findings)
     write_json(output / "links.json", build_links(project_map, journeys, trace))
     atomic_write_text(output / "source-reference.md", source_reference(project_map, map_path, journeys_path))
