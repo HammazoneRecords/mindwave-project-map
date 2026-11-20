@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "member-create-workspace",
+  "map": "example-workspace",
+  "title": "Member creates work in the workspace",
+  "initial": { "role": "member", "node": "home" },
+  "steps": [
+    { "type": "move", "to": "workspace", "expect": "allowed" },
+    { "type": "act", "action": "create", "target": "workspace", "expect": "allowed" },
+    { "type": "checkpoint", "label": "member-created-work" },
+    { "type": "comment", "label": "the original YAML draft asserted create=true; assertions are not implemented yet, so this is recorded as a comment" }
+  ]
+}

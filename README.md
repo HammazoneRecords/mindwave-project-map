@@ -38,18 +38,41 @@ This repository is the public foundation for the architecture. It is intentional
 
 The first release establishes the vocabulary, schema direction, example Map, and Journey model. Runtime adapters and visual skins can be added without changing the distinction between facts and traversal.
 
+**Requirements:** Python >= 3.9 (the tools use `str.removeprefix`). No third-party runtime dependencies — the tools run on the standard library alone.
+
+An independent audit (2026-11-17) found the tools enforce less than this README claims and produced a prioritized remediation plan. The work is tracked in [REMEDIATION_PLAN.md](./REMEDIATION_PLAN.md); until a phase lands there, treat the tool claims below as describing intent, not verified guarantees.
+
 ## Project shape
 
 ```text
+tools/
+  validate_project_map.py     # schema + semantic validation, precise errors
+  run_journeys.py             # executes Journeys against a Map, writes a Trace
+  build_inspection_package.py # validate + run + export one portable package
+  project_map_flow.py         # exports the Project Map pipeline's own flowchart/pseudocode
 spec/
-  map.schema.json       # declarative Map format
-  journey.schema.json   # executable Journey format
+  map.schema.json             # declarative Map format
+  journey.schema.json         # executable Journey format
+  trace.schema.json           # Trace format
+  finding.schema.json         # Finding format
+  variable.schema.json        # Variable Matrix format
 examples/
-  workspace.map.json    # small generic project map
-  member-create.journey.yaml
+  workspace.map.json                  # small generic project map
+  member-create.journey.json          # generic example Journey
+  mindwavemine.map.json               # real fixture: MindWaveMine R&D Interface
+  mindwavemine.journeys.json
+  mindwavemine.trace.json
+  project-map-self.map.json           # the repository maps itself
+  project-map-self.journeys.json
+  project-map-self.trace.json
+  project-map-self.variables.json
+viewer/
+  index.html                  # static inspection viewer for built packages
 formalization/
-  PROJECT_MAP.md        # architecture and invariants
-  TERMINOLOGY.md        # stable language
+  PROJECT_MAP.md              # architecture and invariants
+  TERMINOLOGY.md              # stable language
+docs/                         # self-assessment, flow docs, skin inventory
+tests/                        # baseline reproduction + regression tests
 LICENSE
 README.md
 ```
@@ -102,16 +125,16 @@ python3 tools/run_journeys.py \
   --trace examples/mindwavemine.trace.json
 ```
 
-The runner currently proves the declarative layer: allowed and denied movement, role permissions, capabilities, checkpoints, and portable Trace output. It does not pretend to be a live browser/API adapter yet. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
+The runner currently proves the declarative layer: allowed and denied movement, role permissions, checkpoints, and portable Trace output. It does not yet enforce declared `capabilities` or `edge.requires` (tracked in the remediation plan, Phase 6), and it does not pretend to be a live browser/API adapter. The next adapter will connect these Journeys to the actual R&D Interface endpoints and UI paths.
 
 ## Build a portable inspection package
 
 Use the combined CLI to validate the Map and Journeys, execute every Journey, and export one self-contained inspection package:
 
 ```bash
-python3 tools/build_inspection_package.py \\
-  --map examples/mindwavemine.map.json \\
-  --journeys examples/mindwavemine.journeys.json \\
+python3 tools/build_inspection_package.py \
+  --map examples/mindwavemine.map.json \
+  --journeys examples/mindwavemine.journeys.json \
   --output build/mindwavemine-inspection
 ```
 
